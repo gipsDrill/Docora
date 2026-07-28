@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="Docora — fast, private PDF editing in your browser." />
+  <title>Docora — Fast, private PDF editing</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app" class="app">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Docora home">
+        <span class="brand-mark">D</span>
+        <span>Docora</span>
+        <span class="beta">BETA</span>
+      </a>
+      <div class="top-actions">
+        <span class="privacy-pill"><span class="status-dot"></span>Processed locally</span>
+        <button id="undoBtn" class="icon-btn" title="Undo" disabled>↶</button>
+        <button id="redoBtn" class="icon-btn" title="Redo" disabled>↷</button>
+        <button id="downloadBtn" class="primary-btn" disabled>Download PDF</button>
+      </div>
+    </header>
+
+    <main id="landing" class="landing">
+      <section class="hero">
+        <div class="eyebrow">PRIVATE BY DESIGN</div>
+        <h1>Edit PDFs without<br><span>the complexity.</span></h1>
+        <p>Drop in a document, make your changes and download it. No account, no watermark, no upload to our servers.</p>
+        <label id="dropzone" class="dropzone" for="fileInput">
+          <input id="fileInput" type="file" accept="application/pdf" hidden>
+          <span class="upload-icon">↥</span>
+          <strong>Drop your PDF here</strong>
+          <span>or click to choose a file</span>
+          <small>PDF up to 50 MB · stays on your device</small>
+        </label>
+        <div class="trust-row">
+          <span>✓ No sign-up</span><span>✓ No watermark</span><span>✓ Local processing</span>
+        </div>
+      </section>
+      <section class="feature-strip">
+        <article><b>01</b><h3>Edit visually</h3><p>Add text, signatures, images and shapes directly on the page.</p></article>
+        <article><b>02</b><h3>Organise pages</h3><p>Reorder, rotate and remove pages with simple controls.</p></article>
+        <article><b>03</b><h3>Export instantly</h3><p>Download the finished PDF with no watermark or account.</p></article>
+      </section>
+    </main>
+
+    <main id="workspace" class="workspace hidden">
+      <aside class="sidebar">
+        <div class="panel-title"><span>Pages</span><button id="closeDocBtn" class="text-btn">New file</button></div>
+        <div id="thumbs" class="thumbs"></div>
+      </aside>
+
+      <section class="editor-area">
+        <div class="toolbar" id="toolbar">
+          <button data-tool="select" class="tool active"><span>↖</span>Select</button>
+          <button data-tool="text" class="tool"><span>T</span>Text</button>
+          <button data-tool="whiteout" class="tool"><span>▭</span>Whiteout</button>
+          <button data-tool="image" class="tool"><span>▧</span>Image</button>
+          <button data-tool="signature" class="tool"><span>✎</span>Sign</button>
+          <button data-tool="draw" class="tool"><span>〰</span>Draw</button>
+          <button data-tool="highlight" class="tool"><span>▰</span>Highlight</button>
+          <button data-tool="shape" class="tool"><span>□</span>Shape</button>
+          <button data-tool="date" class="tool"><span>◷</span>Date</button>
+          <button data-tool="checkbox" class="tool"><span>☑</span>Check</button>
+          <input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+        </div>
+
+        <div class="canvas-shell">
+          <div class="zoom-row">
+            <button id="zoomOut" class="mini-btn">−</button>
+            <span id="zoomLabel">100%</span>
+            <button id="zoomIn" class="mini-btn">+</button>
+          </div>
+          <div id="pageStage" class="page-stage">
+            <div id="pageWrap" class="page-wrap">
+              <canvas id="pdfCanvas"></canvas>
+              <div id="overlay" class="overlay"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="properties">
+        <div class="panel-title">Properties</div>
+        <div id="emptyProps" class="empty-props">
+          <div class="empty-icon">◇</div>
+          <h3>Select an element</h3>
+          <p>Click an item on the page to edit its settings.</p>
+        </div>
+        <div id="objectProps" class="object-props hidden">
+          <label>Type<input id="propType" disabled></label>
+          <label id="textValueRow">Text<textarea id="propText" rows="4"></textarea></label>
+          <div class="two-col">
+            <label>Size<input id="propSize" type="number" min="6" max="120"></label>
+            <label>Opacity<input id="propOpacity" type="number" min="0.1" max="1" step="0.1"></label>
+          </div>
+          <label>Colour<input id="propColor" type="color"></label>
+          <button id="duplicateBtn" class="secondary-btn">Duplicate</button>
+          <button id="deleteObjBtn" class="danger-btn">Delete element</button>
+        </div>
+        <div class="page-actions">
+          <div class="panel-title">Page</div>
+          <button id="rotateBtn" class="secondary-btn">↻ Rotate page</button>
+          <button id="deletePageBtn" class="danger-btn">Delete page</button>
+        </div>
+      </aside>
+    </main>
+  </div>
+
+  <div id="signatureModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-head"><div><span class="eyebrow">ADD SIGNATURE</span><h2>Draw your signature</h2></div><button id="closeSignature" class="icon-btn">×</button></div>
+      <canvas id="signatureCanvas" width="720" height="260"></canvas>
+      <div class="modal-actions"><button id="clearSignature" class="secondary-btn">Clear</button><button id="useSignature" class="primary-btn">Use signature</button></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
