@@ -34,8 +34,33 @@ async function renderThumbs(){els.thumbs.innerHTML='';state.pages.forEach((p,i)=
  div.onclick=e=>{if(e.target.tagName==='BUTTON'){checkpoint();p.rotation=(p.rotation+90)%360;renderAll();return}state.current=i;renderAll()};
  div.ondragstart=e=>e.dataTransfer.setData('text/plain',i);div.ondragover=e=>e.preventDefault();div.ondrop=e=>{e.preventDefault();const from=+e.dataTransfer.getData('text/plain'),to=i;if(from===to)return;checkpoint();const [m]=state.pages.splice(from,1);state.pages.splice(to,0,m);state.current=to;renderAll()};
  })}
-async function renderThumbCanvas(c,p){const page=await state.pdfDoc.getPage(p.source+1);const vp=page.getViewport({scale:.22,rotation:p.rotation});c.width=vp.width;c.height=vp.height;await page.render({canvasContext:c.getContext('2d'),viewport:vp}).promise}
-async function renderPage(){if(!state.pages.length)return;state.selected=null;showProps(null);const p=state.pages[state.current];const page=await state.pdfDoc.getPage(p.source+1);const base=page.getViewport({scale:1.25,rotation:p.rotation});const vp=page.getViewport({scale:1.25*state.scale,rotation:p.rotation});els.canvas.width=vp.width;els.canvas.height=vp.height;els.canvas.style.width=vp.width+'px';els.canvas.style.height=vp.height+'px';els.pageWrap.style.width=vp.width+'px';els.pageWrap.style.height=vp.height+'px';await page.render({canvasContext:els.canvas.getContext('2d'),viewport:vp}).promise;renderAnnotations();els.zoomLabel.textContent=Math.round(state.scale*100)+'%'}
+async function renderThumbCanvas(c,p){
+ const page=await state.pdfDoc.getPage(p.source+1);
+ const cssVp=page.getViewport({scale:.22,rotation:p.rotation});
+ const dpr=Math.min(window.devicePixelRatio||1,2.5);
+ const renderVp=page.getViewport({scale:.22*dpr,rotation:p.rotation});
+ c.width=Math.ceil(renderVp.width);c.height=Math.ceil(renderVp.height);
+ c.style.width=cssVp.width+'px';c.style.height=cssVp.height+'px';
+ const ctx=c.getContext('2d',{alpha:false});ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+ await page.render({canvasContext:ctx,viewport:renderVp}).promise
+}
+async function renderPage(){
+ if(!state.pages.length)return;
+ state.selected=null;showProps(null);
+ const p=state.pages[state.current];
+ const page=await state.pdfDoc.getPage(p.source+1);
+ const cssScale=1.25*state.scale;
+ const dpr=Math.min(window.devicePixelRatio||1,2.5);
+ const cssVp=page.getViewport({scale:cssScale,rotation:p.rotation});
+ const renderVp=page.getViewport({scale:cssScale*dpr,rotation:p.rotation});
+ els.canvas.width=Math.ceil(renderVp.width);els.canvas.height=Math.ceil(renderVp.height);
+ els.canvas.style.width=cssVp.width+'px';els.canvas.style.height=cssVp.height+'px';
+ els.pageWrap.style.width=cssVp.width+'px';els.pageWrap.style.height=cssVp.height+'px';
+ const ctx=els.canvas.getContext('2d',{alpha:false});
+ ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
+ await page.render({canvasContext:ctx,viewport:renderVp,background:'rgb(255,255,255)'}).promise;
+ renderAnnotations();els.zoomLabel.textContent=Math.round(state.scale*100)+'%'
+}
 
 function renderAnnotations(){els.overlay.innerHTML='';const p=state.pages[state.current];p.annotations.forEach(a=>{
  const el=document.createElement('div');el.className='annotation '+a.type+(state.selected===a.id?' selected':'');el.dataset.id=a.id;
