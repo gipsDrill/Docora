@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=0.3-dark" />
+  <link rel="stylesheet" href="styles.css?v=0.4-editable" />
 </head>
 <body>
   <div id="app" class="app">
@@ -30,7 +30,7 @@
       <section class="hero">
         <div class="eyebrow">PRIVATE BY DESIGN</div>
         <h1>Edit PDFs without<br><span>the complexity.</span></h1>
-        <p>Drop in a document, make your changes and download it. No account, no watermark, no upload to our servers.</p>
+        <p>Drop in a document, edit its text, add content and download it. No account, no watermark and no upload to our servers.</p>
         <label id="dropzone" class="dropzone" for="fileInput">
           <input id="fileInput" type="file" accept="application/pdf" hidden>
           <span class="upload-icon">↥</span>
@@ -43,8 +43,8 @@
         </div>
       </section>
       <section class="feature-strip">
-        <article><b>01</b><h3>Edit visually</h3><p>Add text, signatures, images and shapes directly on the page.</p></article>
-        <article><b>02</b><h3>Organise pages</h3><p>Reorder, rotate and remove pages with simple controls.</p></article>
+        <article><b>01</b><h3>Edit existing text</h3><p>Click detected text, replace it and control its full appearance.</p></article>
+        <article><b>02</b><h3>Edit visually</h3><p>Add text, signatures, images, highlights and shapes directly on the page.</p></article>
         <article><b>03</b><h3>Export instantly</h3><p>Download the finished PDF with no watermark or account.</p></article>
       </section>
     </main>
@@ -58,6 +58,8 @@
       <section class="editor-area">
         <div class="toolbar" id="toolbar">
           <button data-tool="select" class="tool active"><span>↖</span>Select</button>
+          <button data-tool="editpdf" class="tool edit-tool"><span>⌁</span>Edit PDF</button>
+          <span class="tool-divider" aria-hidden="true"></span>
           <button data-tool="text" class="tool"><span>T</span>Text</button>
           <button data-tool="whiteout" class="tool"><span>▭</span>Whiteout</button>
           <button data-tool="image" class="tool"><span>▧</span>Image</button>
@@ -71,6 +73,11 @@
         </div>
 
         <div class="canvas-shell">
+          <div id="editHint" class="edit-hint hidden">
+            <span class="edit-hint-icon">⌁</span>
+            <div><strong>Edit existing text</strong><small>Hover a text line and click it</small></div>
+            <button id="exitEditMode" title="Exit edit mode">×</button>
+          </div>
           <div class="zoom-row">
             <button id="zoomOut" class="mini-btn">−</button>
             <span id="zoomLabel">100%</span>
@@ -92,17 +99,74 @@
           <h3>Select an element</h3>
           <p>Click an item on the page to edit its settings.</p>
         </div>
+
         <div id="objectProps" class="object-props hidden">
-          <label>Type<input id="propType" disabled></label>
-          <label id="textValueRow">Text<textarea id="propText" rows="4"></textarea></label>
-          <div class="two-col">
-            <label>Size<input id="propSize" type="number" min="6" max="120"></label>
-            <label>Opacity<input id="propOpacity" type="number" min="0.1" max="1" step="0.1"></label>
+          <div class="property-section compact-section">
+            <label>Type<input id="propType" disabled></label>
           </div>
-          <label>Colour<input id="propColor" type="color"></label>
-          <button id="duplicateBtn" class="secondary-btn">Duplicate</button>
-          <button id="deleteObjBtn" class="danger-btn">Delete element</button>
+
+          <div id="textProps" class="property-section hidden">
+            <div class="section-heading"><span>Text</span><small id="existingTextBadge" class="existing-badge hidden">Existing PDF text</small></div>
+            <label class="field-label">Content<textarea id="propText" rows="4" spellcheck="true"></textarea></label>
+
+            <label class="field-label">Font
+              <select id="propFont">
+                <option value="Helvetica">Helvetica</option>
+                <option value="Arial">Arial</option>
+                <option value="Verdana">Verdana</option>
+                <option value="Trebuchet MS">Trebuchet</option>
+                <option value="Times New Roman">Times New Roman</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Courier New">Courier New</option>
+              </select>
+            </label>
+
+            <div class="two-col">
+              <label class="field-label">Size<input id="propSize" type="number" min="6" max="160" step="1"></label>
+              <label class="field-label">Align
+                <select id="propAlign">
+                  <option value="left">Left</option>
+                  <option value="center">Centre</option>
+                  <option value="right">Right</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="style-row" aria-label="Text style">
+              <button id="boldBtn" class="style-btn" title="Bold"><b>B</b></button>
+              <button id="italicBtn" class="style-btn" title="Italic"><i>I</i></button>
+              <button id="underlineBtn" class="style-btn" title="Underline"><u>U</u></button>
+            </div>
+
+            <div class="colour-grid">
+              <label class="colour-field"><span>Text colour</span><input id="propColor" type="color"></label>
+              <label class="colour-field"><span>Background</span><input id="propBgColor" type="color"></label>
+            </div>
+
+            <label class="toggle-row">
+              <span><strong>Text background</strong><small>Cover content underneath</small></span>
+              <input id="propBgEnabled" type="checkbox"><i></i>
+            </label>
+
+            <div id="existingTextNote" class="property-note hidden">
+              Docora covers the original text area and places the edited text above it. This works best on plain backgrounds.
+            </div>
+          </div>
+
+          <div id="genericProps" class="property-section">
+            <label class="field-label">Colour<input id="genericColor" type="color"></label>
+          </div>
+
+          <div class="property-section">
+            <label class="field-label">Opacity<input id="propOpacity" type="range" min="0.1" max="1" step="0.05"><span id="opacityValue" class="range-value">100%</span></label>
+          </div>
+
+          <div class="property-section actions-section">
+            <button id="duplicateBtn" class="secondary-btn">Duplicate</button>
+            <button id="deleteObjBtn" class="danger-btn">Delete element</button>
+          </div>
         </div>
+
         <div class="page-actions">
           <div class="panel-title">Page</div>
           <button id="rotateBtn" class="secondary-btn">↻ Rotate page</button>
@@ -123,6 +187,7 @@
   <div id="toast" class="toast hidden"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-  <script type="module" src="app.js?v=0.3-dark"></script>
+  <script defer src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
+  <script type="module" src="app.js?v=0.4-editable"></script>
 </body>
 </html>

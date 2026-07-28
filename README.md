@@ -1,18 +1,22 @@
-# Docora v0.3 — Dark Workspace
+# Docora v0.4 — Advanced text editing
 
-A browser-based PDF editor with a fully redesigned dark interface.
+A private browser-based PDF editor. Files are processed locally in the browser.
 
-## Open locally
-Use VS Code with the Live Server extension, or upload the files to GitHub Pages / any static hosting.
+## Run locally
 
-## Important
-The PDF page itself remains white because it represents the actual document. The full application chrome, panels, toolbar, workspace, forms and landing page use the dark visual system.
+Use VS Code with the Live Server extension, or publish the folder on GitHub Pages.
+Open `index.html` through an HTTP address such as `http://127.0.0.1:5500`.
 
-## Changes in v0.3
-- complete premium dark visual system
-- stronger hierarchy and panel separation
-- improved contrast and reduced eye strain
-- modern violet accent system
-- clearer toolbar, page thumbnails and property controls
-- cache-busting stylesheet and script references
-- high-DPI PDF rendering retained
+## New in v0.4
+
+- Edit PDF mode for selecting and replacing existing detectable text.
+- Font family, size, bold, italic and underline controls.
+- Text colour and optional text background colour.
+- Text alignment and opacity controls.
+- Double-click text objects for quick inline editing.
+- High-resolution PDF rendering retained.
+- Improved export with matching standard PDF font variants.
+
+## Important technical limitation
+
+PDF is a final-layout format, not a source document format. Existing-text editing works on selectable text layers. Scanned pages, text converted to outlines, complex clipping, rotated text and some custom font encodings may not be detected. Existing text is visually replaced by covering its original area and drawing the edited content above it; plain backgrounds give the best result.
