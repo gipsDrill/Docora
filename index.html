@@ -78,15 +78,19 @@
             <div><strong>Edit existing text</strong><small>Hover a text line and click it</small></div>
             <button id="exitEditMode" title="Exit edit mode">×</button>
           </div>
-          <div class="zoom-row">
-            <button id="zoomOut" class="mini-btn">−</button>
+          <div class="zoom-row" aria-label="Document navigation">
+            <button id="panBtn" class="mini-btn pan-btn" title="Pan document — drag with the mouse (H)">✋</button>
+            <span class="zoom-divider" aria-hidden="true"></span>
+            <button id="zoomOut" class="mini-btn" title="Zoom out">−</button>
             <span id="zoomLabel">100%</span>
-            <button id="zoomIn" class="mini-btn">+</button>
+            <button id="zoomIn" class="mini-btn" title="Zoom in">+</button>
           </div>
-          <div id="pageStage" class="page-stage">
-            <div id="pageWrap" class="page-wrap">
-              <canvas id="pdfCanvas"></canvas>
-              <div id="overlay" class="overlay"></div>
+          <div id="pageStage" class="page-stage" tabindex="0" aria-label="PDF canvas. Use scrollbars, mouse wheel, Space plus drag, middle-mouse drag, or the hand tool to move around.">
+            <div id="pageStageContent" class="page-stage-content">
+              <div id="pageWrap" class="page-wrap">
+                <canvas id="pdfCanvas"></canvas>
+                <div id="overlay" class="overlay"></div>
+              </div>
             </div>
           </div>
         </div>
@@ -188,6 +192,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
   <script defer src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-  <script type="module" src="app.js?v=0.4-editable"></script>
+  <script type="module" src="app.js?v=0.5-pan-navigation"></script>
 </body>
 </html>

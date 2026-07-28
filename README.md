@@ -1,4 +1,4 @@
-# Docora v0.4 — Advanced text editing
+# Docora v0.5 — Pan and zoom navigation
 
 A private browser-based PDF editor. Files are processed locally in the browser.
 
@@ -7,8 +7,14 @@ A private browser-based PDF editor. Files are processed locally in the browser.
 Use VS Code with the Live Server extension, or publish the folder on GitHub Pages.
 Open `index.html` through an HTTP address such as `http://127.0.0.1:5500`.
 
-## New in v0.4
+## New in v0.5
 
+- Full horizontal and vertical scrolling after zooming.
+- Visible, high-contrast scrollbars around the PDF workspace.
+- Hand tool for click-and-drag panning.
+- Temporary panning with Space + left drag or the middle mouse button.
+- Shift + mouse wheel for horizontal movement.
+- Zoom keeps the current viewport area centred.
 - Edit PDF mode for selecting and replacing existing detectable text.
 - Font family, size, bold, italic and underline controls.
 - Text colour and optional text background colour.

@@ -146,3 +146,42 @@ button:active{transform:translateY(1px)}
 @media(max-width:1120px){.workspace{grid-template-columns:200px minmax(0,1fr) 300px}}
 @media(max-width:1000px){.workspace{grid-template-columns:180px minmax(0,1fr)}.properties{width:310px}.edit-hint{left:10px;top:10px;min-width:220px}}
 @media(max-width:720px){.edit-hint{max-width:calc(100% - 108px);min-width:0}.edit-hint-icon{display:none}.tool-divider{display:none}}
+
+
+/* v0.5 — zoom navigation, scrollbars and mouse panning */
+.canvas-shell{min-width:0;min-height:0}
+.page-stage{
+  position:relative;
+  height:100%;
+  overflow:auto;
+  padding:0;
+  scrollbar-gutter:stable both-edges;
+  overscroll-behavior:contain;
+  scrollbar-width:auto;
+  scrollbar-color:#566078 #111620;
+  cursor:default;
+}
+.page-stage::-webkit-scrollbar{width:14px;height:14px}
+.page-stage::-webkit-scrollbar-track{background:#0e131c;border-left:1px solid rgba(255,255,255,.035);border-top:1px solid rgba(255,255,255,.035)}
+.page-stage::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#59647c,#414b60);border:3px solid #0e131c;border-radius:999px}
+.page-stage::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,#6e7a94,#505b72)}
+.page-stage::-webkit-scrollbar-corner{background:#0e131c}
+.page-stage:focus-visible{outline:2px solid rgba(115,92,255,.55);outline-offset:-2px}
+.page-stage-content{
+  box-sizing:border-box;
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  width:max-content;
+  min-width:100%;
+  min-height:100%;
+  padding:52px;
+}
+.page-wrap{margin:0;flex:0 0 auto}
+.page-stage.pan-ready,.page-stage.pan-ready *{cursor:grab!important}
+.page-stage.panning,.page-stage.panning *{cursor:grabbing!important;user-select:none!important}
+.page-stage.panning{scroll-behavior:auto}
+.pan-btn.active{background:linear-gradient(180deg,rgba(127,106,255,.28),rgba(102,80,238,.18));border-color:rgba(139,121,255,.42);color:#d1cbff;box-shadow:0 0 0 3px rgba(115,92,255,.11)}
+.zoom-divider{width:1px;height:24px;background:var(--line-strong);margin:0 1px}
+@media(max-width:1000px){.page-stage-content{padding:38px 22px}}
+@media(max-width:720px){.page-stage-content{padding:48px 12px 24px}.page-stage::-webkit-scrollbar{width:10px;height:10px}}

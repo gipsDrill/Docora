@@ -18,6 +18,9 @@ const state = {
   future: [],
   drag: null,
   draw: null,
+  panMode: false,
+  spacePan: false,
+  pan: null,
 };
 
 const els = {
@@ -29,6 +32,9 @@ const els = {
   canvas: $('#pdfCanvas'),
   overlay: $('#overlay'),
   pageWrap: $('#pageWrap'),
+  pageStage: $('#pageStage'),
+  pageStageContent: $('#pageStageContent'),
+  panBtn: $('#panBtn'),
   download: $('#downloadBtn'),
   undo: $('#undoBtn'),
   redo: $('#redoBtn'),
@@ -765,14 +771,122 @@ $('#deletePageBtn').onclick = () => {
   renderAll();
 };
 
-$('#zoomIn').onclick = () => {
-  state.scale = Math.min(1.8, state.scale + 0.1);
-  renderPage();
+async function setZoom(nextScale) {
+  const stage = els.pageStage;
+  const previousWidth = Math.max(stage.scrollWidth, 1);
+  const previousHeight = Math.max(stage.scrollHeight, 1);
+  const centreX = (stage.scrollLeft + stage.clientWidth / 2) / previousWidth;
+  const centreY = (stage.scrollTop + stage.clientHeight / 2) / previousHeight;
+
+  state.scale = clamp(nextScale, 0.5, 2.5);
+  await renderPage();
+
+  requestAnimationFrame(() => {
+    stage.scrollLeft = Math.max(0, centreX * stage.scrollWidth - stage.clientWidth / 2);
+    stage.scrollTop = Math.max(0, centreY * stage.scrollHeight - stage.clientHeight / 2);
+  });
+}
+
+$('#zoomIn').onclick = () => setZoom(state.scale + 0.1);
+$('#zoomOut').onclick = () => setZoom(state.scale - 0.1);
+
+function updatePanUI() {
+  const ready = state.panMode || state.spacePan;
+  els.panBtn.classList.toggle('active', state.panMode);
+  els.panBtn.setAttribute('aria-pressed', String(state.panMode));
+  els.pageStage.classList.toggle('pan-ready', ready && !state.pan);
+}
+
+function stopPanning(pointerId) {
+  if (!state.pan) return;
+  try {
+    if (pointerId != null && els.pageStage.hasPointerCapture(pointerId)) {
+      els.pageStage.releasePointerCapture(pointerId);
+    }
+  } catch (_) {}
+  state.pan = null;
+  els.pageStage.classList.remove('panning');
+  updatePanUI();
+}
+
+els.panBtn.onclick = () => {
+  state.panMode = !state.panMode;
+  updatePanUI();
+  toast(state.panMode ? 'Hand tool active — drag to move around the PDF.' : 'Hand tool off.');
 };
-$('#zoomOut').onclick = () => {
-  state.scale = Math.max(0.5, state.scale - 0.1);
-  renderPage();
-};
+
+els.pageStage.addEventListener('pointerdown', (event) => {
+  const temporaryPan = event.button === 1 || state.spacePan;
+  if (!state.panMode && !temporaryPan) return;
+  if (event.button !== 0 && event.button !== 1) return;
+
+  event.preventDefault();
+  event.stopPropagation();
+  els.pageStage.focus({ preventScroll: true });
+  state.pan = {
+    pointerId: event.pointerId,
+    startX: event.clientX,
+    startY: event.clientY,
+    scrollLeft: els.pageStage.scrollLeft,
+    scrollTop: els.pageStage.scrollTop,
+  };
+  els.pageStage.setPointerCapture?.(event.pointerId);
+  els.pageStage.classList.add('panning');
+  els.pageStage.classList.remove('pan-ready');
+}, true);
+
+els.pageStage.addEventListener('pointermove', (event) => {
+  if (!state.pan || state.pan.pointerId !== event.pointerId) return;
+  event.preventDefault();
+  els.pageStage.scrollLeft = state.pan.scrollLeft - (event.clientX - state.pan.startX);
+  els.pageStage.scrollTop = state.pan.scrollTop - (event.clientY - state.pan.startY);
+}, true);
+
+els.pageStage.addEventListener('pointerup', (event) => stopPanning(event.pointerId), true);
+els.pageStage.addEventListener('pointercancel', (event) => stopPanning(event.pointerId), true);
+els.pageStage.addEventListener('lostpointercapture', () => stopPanning(), true);
+els.pageStage.addEventListener('auxclick', (event) => {
+  if (event.button === 1) event.preventDefault();
+});
+
+els.pageStage.addEventListener('wheel', (event) => {
+  if (!event.shiftKey || Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return;
+  event.preventDefault();
+  els.pageStage.scrollLeft += event.deltaY;
+}, { passive: false });
+
+window.addEventListener('keydown', (event) => {
+  const target = event.target;
+  const typing = target instanceof HTMLElement && (target.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(target.tagName));
+  if (typing) return;
+
+  if (event.code === 'Space' && !event.repeat) {
+    state.spacePan = true;
+    updatePanUI();
+    event.preventDefault();
+  }
+  if (event.key.toLowerCase() === 'h' && !event.ctrlKey && !event.metaKey && !event.altKey) {
+    state.panMode = !state.panMode;
+    updatePanUI();
+    event.preventDefault();
+  }
+});
+
+window.addEventListener('keyup', (event) => {
+  if (event.code !== 'Space') return;
+  state.spacePan = false;
+  if (state.pan) stopPanning(state.pan.pointerId);
+  updatePanUI();
+  event.preventDefault();
+});
+
+window.addEventListener('blur', () => {
+  state.spacePan = false;
+  stopPanning(state.pan?.pointerId);
+  updatePanUI();
+});
+
+updatePanUI();
 
 els.undo.onclick = () => {
   if (!state.history.length) return;
