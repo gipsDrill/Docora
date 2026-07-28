@@ -1,16 +1,18 @@
-# Docora v0.2
+# Docora v0.3 — Dark Workspace
 
-Improved dark-workspace build of the browser PDF editor.
+A browser-based PDF editor with a fully redesigned dark interface.
 
-## Changes in v0.2
-- darker, higher-contrast workspace and panels
-- stronger visual separation between navigation, toolbar, canvas and properties
-- high-DPI PDF rendering using the device pixel ratio
-- sharper page thumbnails
-- improved page shadow and canvas background
-- refined controls, selected states and input styling
+## Open locally
+Use VS Code with the Live Server extension, or upload the files to GitHub Pages / any static hosting.
 
-## Run locally
-Open the folder with VS Code and use the **Live Server** extension, or upload all files to a static host such as GitHub Pages.
+## Important
+The PDF page itself remains white because it represents the actual document. The full application chrome, panels, toolbar, workspace, forms and landing page use the dark visual system.
 
-The application loads PDF.js, pdf-lib and Google Fonts from their CDNs, so an internet connection is required.
+## Changes in v0.3
+- complete premium dark visual system
+- stronger hierarchy and panel separation
+- improved contrast and reduced eye strain
+- modern violet accent system
+- clearer toolbar, page thumbnails and property controls
+- cache-busting stylesheet and script references
+- high-DPI PDF rendering retained
