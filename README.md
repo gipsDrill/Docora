@@ -45,15 +45,13 @@ Then open the address shown in the terminal.
 
 The package can be uploaded directly to GitHub Pages, Cloudflare Pages, Netlify or standard static hosting.
 
-The included canonical URLs, sitemap and Open Graph URLs use:
+This production package is configured for:
 
 ```text
-https://docora.goodform.org.uk
+https://docora.uk
 ```
 
-Before launching under another domain, search the project for that address and replace it with the final URL. Also update `robots.txt`, `sitemap.xml` and the Open Graph URLs in `index.html`.
-
-For GitHub Pages with a custom domain, copy `CNAME.example` to a file named `CNAME`, then replace its content with the final domain.
+The canonical URL, Open Graph image URLs, structured data, `robots.txt`, `sitemap.xml` and GitHub Pages `CNAME` file already use the final domain. Upload the package contents to the repository root, then set `docora.uk` as the custom domain in GitHub Pages.
 
 ## External dependencies
 
@@ -67,7 +65,7 @@ PDF is a final-layout format rather than a normal word-processing document. Doco
 
 ## Production checks before launch
 
-1. Replace the provisional domain if needed.
+1. Confirm that the live domain resolves to `https://docora.uk/`.
 2. Review the privacy and terms pages for the final business and hosting setup.
 3. Test on Chrome, Edge, Firefox and Safari.
 4. Test at least one scanned PDF, one long PDF and one document with Polish characters.

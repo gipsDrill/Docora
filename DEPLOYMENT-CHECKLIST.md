@@ -2,9 +2,9 @@
 
 ## Domain and SEO
 
-- [ ] Decide the final domain.
-- [ ] Replace every occurrence of `https://docora.goodform.org.uk` if a different domain is used.
-- [ ] Add the final custom domain to the hosting platform.
+- [x] Final domain configured: `https://docora.uk`.
+- [x] Canonical URLs, Open Graph, structured data, sitemap, robots and `CNAME` updated.
+- [ ] Add `docora.uk` as the custom domain on the hosting platform.
 - [ ] Confirm HTTPS works before public launch.
 - [ ] Open `/robots.txt` and `/sitemap.xml` from the live domain.
 - [ ] Add the property to Google Search Console and submit the sitemap.
