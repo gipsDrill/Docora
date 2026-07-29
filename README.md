@@ -96,3 +96,6 @@ Footer attribution:
 ```
 
 Docora v1.0.1 mobile editor fixes: visible hand tool on phones, touch panning, robust PDF text extraction with OCR fallback, and Billora footer link.
+
+## v1.0.3 homepage preview
+- Replaced the abstract CSS editor mockup with a clearer Docora PDF editor product image.
