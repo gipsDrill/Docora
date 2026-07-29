@@ -93,29 +93,30 @@
           <button data-tool="shape" class="tool"><span>□</span>Shape</button>
           <button data-tool="date" class="tool"><span>◷</span>Date</button>
           <button data-tool="checkbox" class="tool"><span>☑</span>Check</button>
+          <span class="tool-divider" aria-hidden="true"></span>
+          <div class="toolbar-view-controls" aria-label="Document navigation and zoom">
+            <button id="panBtn" class="toolbar-control pan-btn" title="Pan document — drag with the mouse (H)" aria-label="Hand tool">✋</button>
+            <button id="centerViewBtn" class="toolbar-control" title="Centre document" aria-label="Centre document">◎</button>
+            <button id="fitViewBtn" class="toolbar-control fit-control" title="Fit page to window">Fit</button>
+            <button id="gridBtn" class="toolbar-control" title="Toggle grid snapping" aria-label="Toggle grid">#</button>
+            <span class="toolbar-control-divider" aria-hidden="true"></span>
+            <button id="zoomOut" class="toolbar-control" title="Zoom out" aria-label="Zoom out">−</button>
+            <span id="zoomLabel" class="toolbar-zoom-label">100%</span>
+            <button id="zoomIn" class="toolbar-control" title="Zoom in" aria-label="Zoom in">+</button>
+          </div>
+          <div id="editTextControls" class="toolbar-edit-controls hidden" aria-label="Existing PDF text selection">
+            <button id="selectAllTextBtn" class="toolbar-text-action" type="button" title="Select all editable text on this page">Select all</button>
+            <button id="clearTextSelectionBtn" class="toolbar-text-action" type="button" title="Clear the current selection">Clear</button>
+          </div>
           <input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp" hidden>
         </div>
 
         <div class="canvas-shell">
-          <div id="editHint" class="edit-hint hidden">
+          <button id="editHint" class="edit-hint hidden" type="button" title="Edit existing PDF text. Drag across text or Ctrl/Cmd + click to select several items.">
             <span class="edit-hint-icon">⌁</span>
-            <div><strong>Edit existing text</strong><small>Drag across text or Ctrl/Cmd + click to select several items</small></div>
-            <div class="edit-hint-actions">
-              <button id="selectAllTextBtn" class="edit-hint-action" type="button" title="Select all editable text on this page">Select all</button>
-              <button id="clearTextSelectionBtn" class="edit-hint-action" type="button" title="Clear the current selection">Clear</button>
-              <button id="exitEditMode" title="Exit edit mode">×</button>
-            </div>
-          </div>
-          <div class="zoom-row" aria-label="Document navigation">
-            <button id="panBtn" class="mini-btn pan-btn" title="Pan document — drag with the mouse (H)">✋</button>
-            <button id="centerViewBtn" class="mini-btn" title="Centre document">◎</button>
-            <button id="fitViewBtn" class="mini-btn fit-btn" title="Fit page to window">Fit</button>
-            <button id="gridBtn" class="mini-btn" title="Toggle grid snapping">#</button>
-            <span class="zoom-divider" aria-hidden="true"></span>
-            <button id="zoomOut" class="mini-btn" title="Zoom out">−</button>
-            <span id="zoomLabel">100%</span>
-            <button id="zoomIn" class="mini-btn" title="Zoom in">+</button>
-          </div>
+            <span class="edit-hint-copy"><strong>Edit text</strong><small id="editHintStatus">Drag or Ctrl/Cmd + click</small></span>
+            <span id="exitEditMode" class="edit-hint-close" role="button" aria-label="Exit edit mode" title="Exit edit mode">×</span>
+          </button>
           <div id="pageStage" class="page-stage" tabindex="0" aria-label="PDF canvas. Use scrollbars, mouse wheel, Space plus drag, middle-mouse drag, or the hand tool to move around.">
             <div id="pageStageContent" class="page-stage-content">
               <div id="pageWrap" class="page-wrap">

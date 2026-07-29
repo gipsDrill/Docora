@@ -3,7 +3,7 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dis
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
-const BASE_RENDER_SCALE = 1.25;
+const BASE_RENDER_SCALE = 1.5;
 const TEXT_TYPES = new Set(['text', 'date', 'existingText']);
 
 const state = {
@@ -56,6 +56,8 @@ const els = {
   imageInput: $('#imageInput'),
   toast: $('#toast'),
   editHint: $('#editHint'),
+  editHintStatus: $('#editHintStatus'),
+  editTextControls: $('#editTextControls'),
   editViewTab: $('#editViewTab'),
   pagesViewTab: $('#pagesViewTab'),
   pagesManager: $('#pagesManager'),
@@ -275,7 +277,7 @@ async function renderThumbCanvas(canvas, pageState) {
   const page = await state.pdfDoc.getPage(pageState.source + 1);
   const rotation = pageRotation(pageState);
   const cssViewport = page.getViewport({ scale: 0.22, rotation });
-  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 2), 3.5);
   const renderViewport = page.getViewport({ scale: 0.22 * dpr, rotation });
 
   canvas.width = Math.ceil(renderViewport.width);
@@ -296,8 +298,11 @@ async function renderPage() {
   const page = await state.pdfDoc.getPage(pageState.source + 1);
   const rotation = pageRotation(pageState);
   const cssScale = BASE_RENDER_SCALE * state.scale;
-  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
   const cssViewport = page.getViewport({ scale: cssScale, rotation });
+  const deviceDpr = Math.max(window.devicePixelRatio || 1, 2);
+  const maxCanvasSide = 8192;
+  const safeDpr = Math.min(3.5, deviceDpr, maxCanvasSide / Math.max(cssViewport.width, 1), maxCanvasSide / Math.max(cssViewport.height, 1));
+  const dpr = Math.max(1, safeDpr);
   const renderViewport = page.getViewport({ scale: cssScale * dpr, rotation });
 
   els.canvas.width = Math.ceil(renderViewport.width);
@@ -561,11 +566,11 @@ function renderDetectedTextTargets(pageState) {
   els.editHint.classList.remove('hidden');
 
   if (!items.length) {
-    els.editHint.querySelector('small').textContent = 'No editable text detected on this page';
+    els.editHintStatus.textContent = 'No editable text found';
     return;
   }
 
-  els.editHint.querySelector('small').textContent = 'Drag across text or Ctrl/Cmd + click to select several items';
+  els.editHintStatus.textContent = 'Drag or Ctrl/Cmd + click';
 
   items.forEach((item) => {
     if (editedSourceIds.has(item.id)) return;
@@ -1001,6 +1006,7 @@ function setTool(tool, rerender = true) {
   state.textMarquee = null;
   $$('.tool').forEach((button) => button.classList.toggle('active', button.dataset.tool === tool));
   els.editHint.classList.toggle('hidden', tool !== 'editpdf');
+  els.editTextControls.classList.toggle('hidden', tool !== 'editpdf');
   els.overlay.classList.toggle('editing-pdf', tool === 'editpdf');
   if (rerender) renderAnnotations();
 }
@@ -1029,7 +1035,8 @@ $$('.tool').forEach((button) => {
   };
 });
 
-$('#exitEditMode').onclick = () => setTool('select');
+$('#exitEditMode').onclick = (event) => { event.stopPropagation(); setTool('select'); };
+els.editHint.onclick = () => toast(els.editHintStatus.textContent === 'No editable text found' ? 'No editable text was detected on this page.' : 'Drag across text or use Ctrl/Cmd + click to select multiple text items.');
 $('#selectAllTextBtn').onclick = selectAllEditableText;
 $('#clearTextSelectionBtn').onclick = () => clearSelection();
 
@@ -1571,7 +1578,7 @@ async function renderManagerCanvas(canvas, pageState) {
   const base = page.getViewport({ scale: 1, rotation });
   const targetWidth = 170;
   const cssScale = targetWidth / Math.max(base.width, 1);
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = Math.min(Math.max(window.devicePixelRatio || 1, 2), 3);
   const cssViewport = page.getViewport({ scale: cssScale, rotation });
   const renderViewport = page.getViewport({ scale: cssScale * dpr, rotation });
   canvas.width = Math.ceil(renderViewport.width);
