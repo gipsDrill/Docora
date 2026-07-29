@@ -395,3 +395,16 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 @media(max-width:1180px){.toolbar-control{min-width:36px;height:38px;padding-inline:8px}.toolbar-text-action{height:38px;padding-inline:9px}.toolbar-zoom-label{min-width:40px}}
 @media(max-width:720px){.toolbar-view-controls{order:20}.toolbar-edit-controls{order:21}.toolbar-control{min-width:37px;height:38px}.toolbar-control.fit-control{display:none}.toolbar-text-action{height:38px}.edit-hint{top:8px;left:8px;max-width:165px}.edit-hint-copy small{max-width:88px}.canvas-shell{padding-bottom:72px}}
 @media(max-width:430px){.toolbar-text-action{display:none}.toolbar-zoom-label{min-width:36px}.edit-hint{max-width:145px}.edit-hint-copy small{display:none}}
+
+/* Existing PDF text remains visually untouched until the user really edits it. */
+.annotation.existingText.existing-text-pristine {
+  background: transparent !important;
+  color: transparent !important;
+}
+.annotation.existingText.existing-text-pristine .annotation-content {
+  visibility: hidden;
+}
+.annotation.existingText.existing-text-pristine.selected {
+  outline: 2px solid rgba(112, 83, 255, .9);
+  outline-offset: 1px;
+}

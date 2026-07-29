@@ -379,8 +379,9 @@ async function detectTextItems(page, viewport, cssScale, sourcePage) {
         const w = clamp(widthPx / viewport.width, 0.012, 1 - x);
         const h = clamp((fontHeightPx * 1.18) / viewport.height, 0.012, 1 - y);
         const style = textContent.styles?.[item.fontName] || {};
-        const family = inferFontFamily(style.fontFamily || '');
-        const styleName = `${style.fontFamily || ''} ${item.fontName || ''}`.toLowerCase();
+        const sourceFontName = `${style.fontFamily || ''} ${item.fontName || ''}`.trim();
+        const family = inferFontFamily(sourceFontName);
+        const styleName = sourceFontName.toLowerCase();
 
         return {
           id: `${sourcePage}-${index}-${text.slice(0, 20)}`,
@@ -391,7 +392,8 @@ async function detectTextItems(page, viewport, cssScale, sourcePage) {
           h,
           size: Math.max(6, Math.round((fontHeightPx / cssScale) * 10) / 10),
           fontFamily: family,
-          bold: /bold|black|semibold|demi/.test(styleName),
+          sourceFontName,
+          bold: /bold|black|semibold|demi|heavy/.test(styleName),
           italic: /italic|oblique/.test(styleName),
         };
       })
@@ -403,10 +405,15 @@ async function detectTextItems(page, viewport, cssScale, sourcePage) {
 }
 
 function inferFontFamily(source) {
-  const font = source.toLowerCase();
-  if (font.includes('mono') || font.includes('courier')) return 'Courier New';
-  if (font.includes('serif') || font.includes('times')) return 'Times New Roman';
-  return 'Helvetica';
+  const font = String(source || '').toLowerCase().replace(/[,+_-]/g, ' ');
+  // Choose the closest browser-safe family rather than forcing every PDF font to Helvetica.
+  if (/courier|mono|consolas|menlo|monaco|typewriter/.test(font)) return 'Courier New';
+  if (/georgia|charter|bookman|palatino|garamond|baskerville/.test(font)) return 'Georgia';
+  if (/times|serif|roman|cambria|minion/.test(font)) return 'Times New Roman';
+  if (/verdana|tahoma|geneva/.test(font)) return 'Verdana';
+  if (/trebuchet|frutiger|humanist/.test(font)) return 'Trebuchet MS';
+  if (/arial|helvetica|sans|roboto|inter|open sans|lato|montserrat|noto/.test(font)) return 'Arial';
+  return 'Arial';
 }
 
 function renderAnnotations() {
@@ -445,7 +452,16 @@ function renderAnnotations() {
       const content = document.createElement('div');
       content.className = 'annotation-content';
       content.style.paddingLeft = `${Math.max(0, annotation.listIndent || 0) * 18 * state.scale}px`;
-      content.textContent = formattedText(annotation);
+      const pristineExistingText = annotation.type === 'existingText' && !annotation.modified;
+      if (pristineExistingText) {
+        // Selection must never visually replace the source PDF text. Keep only the selection outline
+        // until the user actually edits, moves, resizes or formats this item.
+        element.classList.add('existing-text-pristine');
+        element.style.background = 'transparent';
+        content.textContent = '';
+      } else {
+        content.textContent = formattedText(annotation);
+      }
       element.append(content);
       enableInlineTextEditing(element, content, annotation);
     } else if (annotation.type === 'checkbox') {
@@ -606,7 +622,11 @@ function existingTextAnnotation(item) {
     w: Math.max(item.w, 0.025),
     h: Math.max(item.h, 0.022),
     size: item.size,
-    fontFamily: item.fontFamily || 'Helvetica',
+    fontFamily: item.fontFamily || 'Arial',
+    sourceFontName: item.sourceFontName || '',
+    originalSize: item.size,
+    originalFontFamily: item.fontFamily || 'Arial',
+    modified: false,
     bold: item.bold || false,
     italic: item.italic || false,
     underline: false,
@@ -667,6 +687,32 @@ function enableInlineTextEditing(element, content, annotation) {
     if (!TEXT_TYPES.has(annotation.type)) return;
 
     const before = annotation.text || '';
+    if (annotation.type === 'existingText' && !annotation.modified) {
+      checkpoint();
+      annotation.modified = true;
+      renderAnnotations();
+      const refreshed = els.overlay.querySelector(`[data-id="${annotation.id}"] .annotation-content`);
+      if (refreshed) {
+        refreshed.textContent = before;
+        refreshed.contentEditable = 'true';
+        refreshed.classList.add('editing');
+        refreshed.focus();
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(refreshed);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        refreshed.onblur = () => {
+          refreshed.contentEditable = 'false';
+          refreshed.classList.remove('editing');
+          const next = refreshed.textContent || '';
+          if (next !== before) annotation.text = next;
+          showProps(annotation);
+          renderAnnotations();
+        };
+      }
+      return;
+    }
     content.textContent = before;
     content.contentEditable = 'true';
     content.classList.add('editing');
@@ -749,6 +795,10 @@ window.addEventListener('pointermove', (event) => {
   const dx = (event.clientX - state.drag.startX) / state.drag.rect.width;
   const dy = (event.clientY - state.drag.startY) / state.drag.rect.height;
   state.drag.changed = true;
+  state.drag.ids.forEach((id) => {
+    const item = currentAnn(id);
+    if (item?.type === 'existingText') item.modified = true;
+  });
   state.guides = [];
 
   if (state.drag.resize) {
@@ -1071,7 +1121,9 @@ function showProps(annotation) {
   $('#existingTextNote').classList.toggle('hidden', !isExisting);
 
   $('#propText').value = annotation.text || '';
-  $('#propFont').value = annotation.fontFamily || 'Helvetica';
+  const mappedFont = annotation.fontFamily || 'Arial';
+  const fontSelect = $('#propFont');
+  fontSelect.value = [...fontSelect.options].some((option) => option.value === mappedFont) ? mappedFont : inferFontFamily(annotation.sourceFontName || mappedFont);
   $('#propSize').value = annotation.size || 18;
   $('#propAlign').value = annotation.align || 'left';
   $('#propLineHeight').value = annotation.lineHeight || 1.2;
@@ -1119,6 +1171,7 @@ function updateProp(key, value) {
   const annotation = currentAnn();
   if (!annotation) return;
   checkpoint();
+  if (annotation.type === 'existingText') annotation.modified = true;
   annotation[key] = value;
   if (TEXT_STYLE_KEYS.has(key)) rememberTextStyle(annotation);
   renderAnnotations();
@@ -1831,6 +1884,8 @@ async function exportPDF() {
         const colour = hexRgb(annotation.color || '#111318');
 
         if (TEXT_TYPES.has(annotation.type)) {
+          // Merely selecting detected PDF text must not alter the downloaded file.
+          if (annotation.type === 'existingText' && !annotation.modified) continue;
           const backgroundEnabled = annotation.backgroundEnabled || annotation.type === 'existingText';
           if (backgroundEnabled) {
             const background = hexRgb(annotation.backgroundColor || '#ffffff');

@@ -1,5 +1,5 @@
 
-## Docora v1.0.5 — advanced text selection
+## Docora v1.0.6 — advanced text selection
 
 - Drag a selection rectangle across detected PDF text to convert and select multiple text cells in one action.
 - Use Ctrl + left click on Windows/Linux or Cmd + click on macOS to add or remove individual text cells from the selection.
@@ -110,7 +110,7 @@ Docora v1.0.1 mobile editor fixes: visible hand tool on phones, touch panning, r
 - Replaced the abstract CSS editor mockup with a clearer Docora PDF editor product image.
 
 
-## v1.0.5
+## v1.0.6
 - Moved pan, centre, fit, grid and zoom controls into the main toolbar.
 - Replaced the large edit-text panel with a compact contextual button.
 - Increased PDF canvas render quality with high-DPI rendering and safe 8192 px limits.

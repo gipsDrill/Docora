@@ -1,1 +1,1 @@
-Docora v1.0.5 — Integrated Toolbar & HD PDF Rendering
+1.0.6
