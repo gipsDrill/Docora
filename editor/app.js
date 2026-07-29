@@ -164,7 +164,7 @@ function updateUndo() {
 
 async function loadPDF(file) {
   if (!file || file.type !== 'application/pdf') return toast('Please choose a PDF file.');
-  if (file.size > 50 * 1024 * 1024) return toast('This beta supports files up to 50 MB.');
+  if (file.size > 50 * 1024 * 1024) return toast('Docora supports files up to 50 MB.');
 
   showBusy('Opening PDF', 'Reading the document…');
   try {
