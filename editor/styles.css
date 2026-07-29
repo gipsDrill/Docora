@@ -350,3 +350,21 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
   .zoom-row .fit-btn{display:none}
   .app-footer{font-size:8.5px;padding-inline:6px}
 }
+
+
+/* v1.0.4 — multi-select existing PDF text */
+.edit-hint{display:flex;align-items:center;gap:10px}
+.edit-hint>div:nth-child(2){min-width:0;flex:1}
+.edit-hint-actions{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.edit-hint-action{height:28px;padding:0 9px;border:1px solid rgba(156,140,255,.28);border-radius:8px;background:rgba(115,92,255,.10);color:#cfc9ff;font-size:10px;font-weight:750;cursor:pointer}
+.edit-hint-action:hover{background:rgba(115,92,255,.2);border-color:rgba(156,140,255,.48);color:#fff}
+.pdf-text-target{position:absolute;padding:0;border:1px solid transparent;background:rgba(115,92,255,.035);border-radius:3px;cursor:text;z-index:6;transition:background .12s ease,border-color .12s ease,box-shadow .12s ease}
+.pdf-text-target:hover,.pdf-text-target.hovered{background:rgba(115,92,255,.14);border-color:rgba(143,127,255,.72);box-shadow:0 0 0 2px rgba(115,92,255,.09)}
+.pdf-text-target.drag-candidate{background:rgba(51,196,162,.15);border-color:rgba(72,218,181,.9);box-shadow:0 0 0 2px rgba(51,196,162,.12)}
+.selection-marquee.text-marquee{border-color:#40d7b4;background:rgba(51,196,162,.12);box-shadow:0 0 0 1px rgba(255,255,255,.08) inset,0 0 20px rgba(51,196,162,.12)}
+.annotation.existingText.selected{border-color:#40d7b4;box-shadow:0 0 0 3px rgba(51,196,162,.16)}
+.overlay.editing-pdf{cursor:crosshair}
+@media(max-width:720px){
+  .edit-hint-actions .edit-hint-action{display:none}
+  .edit-hint{right:120px}
+}

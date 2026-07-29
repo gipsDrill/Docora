@@ -18,6 +18,7 @@ const state = {
   clipboard: [],
   copiedStyle: null,
   marquee: null,
+  textMarquee: null,
   guides: [],
   dirty: false,
   fileName: 'document.pdf',
@@ -564,13 +565,14 @@ function renderDetectedTextTargets(pageState) {
     return;
   }
 
-  els.editHint.querySelector('small').textContent = 'Hover a text line and click it';
+  els.editHint.querySelector('small').textContent = 'Drag across text or Ctrl/Cmd + click to select several items';
 
   items.forEach((item) => {
     if (editedSourceIds.has(item.id)) return;
     const target = document.createElement('button');
     target.type = 'button';
     target.className = 'pdf-text-target';
+    target.dataset.textId = item.id;
     target.title = `Edit “${item.text.slice(0, 80)}”`;
     Object.assign(target.style, {
       left: `${item.x * 100}%`,
@@ -579,15 +581,18 @@ function renderDetectedTextTargets(pageState) {
       height: `${item.h * 100}%`,
     });
     target.onclick = (event) => {
+      event.preventDefault();
       event.stopPropagation();
-      convertDetectedText(item);
+      if (state.textMarquee?.moved) return;
+      convertDetectedText(item, { additive: event.ctrlKey || event.metaKey || event.shiftKey });
     };
     els.overlay.append(target);
   });
 }
 
-function convertDetectedText(item) {
-  addAnn({
+function existingTextAnnotation(item) {
+  return {
+    id: uid(),
     type: 'existingText',
     sourceTextId: item.id,
     text: item.text,
@@ -610,8 +615,45 @@ function convertDetectedText(item) {
     backgroundColor: '#ffffff',
     backgroundOpacity: 1,
     opacity: 1,
+  };
+}
+
+function convertDetectedItems(items, { additive = false, message = true } = {}) {
+  const pageState = state.pages[state.current];
+  if (!pageState || !items.length) return [];
+  const bySource = new Map(pageState.annotations.filter((annotation) => annotation.type === 'existingText' && annotation.sourceTextId).map((annotation) => [annotation.sourceTextId, annotation]));
+  const before = snap();
+  const ids = additive ? new Set(state.selectedIds) : new Set();
+  let created = 0;
+  items.forEach((item) => {
+    let annotation = bySource.get(item.id);
+    if (!annotation) {
+      annotation = existingTextAnnotation(item);
+      pageState.annotations.push(annotation);
+      bySource.set(item.id, annotation);
+      created += 1;
+    }
+    ids.add(annotation.id);
   });
-  toast('Text selected. Edit it in the Properties panel.');
+  if (created) pushHistory(before);
+  setSelection([...ids], [...ids].at(-1) || null, false);
+  renderAnnotations();
+  showProps(currentAnn() || null);
+  if (message) toast(items.length === 1 ? 'Text selected. Edit it in the Properties panel.' : `${items.length} text items selected.`);
+  return [...ids];
+}
+
+function convertDetectedText(item, options = {}) {
+  return convertDetectedItems([item], options);
+}
+
+function selectAllEditableText() {
+  const pageState = state.pages[state.current];
+  if (!pageState) return;
+  const items = pageState.detectedText || [];
+  if (!items.length) return toast('No editable text was found on this page.');
+  convertDetectedItems(items, { additive: false, message: false });
+  toast(`${items.length} text items selected.`);
 }
 
 function enableInlineTextEditing(element, content, annotation) {
@@ -655,7 +697,7 @@ function bindAnnotation(element, annotation, handle) {
       ? state.pages[state.current].annotations.filter((item) => item.groupId === annotation.groupId).map((item) => item.id)
       : [annotation.id];
 
-    if (event.shiftKey) {
+    if (event.shiftKey || event.ctrlKey || event.metaKey) {
       const next = new Set(state.selectedIds);
       groupedIds.forEach((id) => next.has(id) ? next.delete(id) : next.add(id));
       setSelection([...next], next.has(annotation.id) ? annotation.id : [...next][0], true);
@@ -788,14 +830,28 @@ function renderSmartGuides() {
 }
 
 function renderMarquee() {
-  if (!state.marquee) return;
+  const marquee = state.textMarquee || state.marquee;
+  if (!marquee) return;
   const box = document.createElement('div');
-  box.className = 'selection-marquee';
+  box.className = `selection-marquee${state.textMarquee ? ' text-marquee' : ''}`;
   Object.assign(box.style, {
-    left: `${state.marquee.x * 100}%`, top: `${state.marquee.y * 100}%`,
-    width: `${state.marquee.w * 100}%`, height: `${state.marquee.h * 100}%`,
+    left: `${marquee.x * 100}%`, top: `${marquee.y * 100}%`,
+    width: `${marquee.w * 100}%`, height: `${marquee.h * 100}%`,
   });
   els.overlay.append(box);
+  if (state.textMarquee?.moved) {
+    const candidates = editableTextItemsInBox(state.textMarquee);
+    const ids = new Set(candidates.map((item) => item.id));
+    els.overlay.querySelectorAll('.pdf-text-target').forEach((target) => target.classList.toggle('drag-candidate', ids.has(target.dataset.textId)));
+  }
+}
+
+function editableTextItemsInBox(box) {
+  const pageState = state.pages[state.current];
+  if (!pageState) return [];
+  return (pageState.detectedText || []).filter((item) => (
+    item.x < box.x + box.w && item.x + item.w > box.x && item.y < box.y + box.h && item.y + item.h > box.y
+  ));
 }
 
 function snapPosition(x, y, w, h, movingIds = []) {
@@ -844,6 +900,14 @@ els.overlay.onpointerdown = (event) => {
     event.preventDefault();
     return;
   }
+  if (state.tool === 'editpdf' && !state.panMode && !state.spacePan) {
+    const startX = clamp((event.clientX - rect.left) / rect.width, 0, 1);
+    const startY = clamp((event.clientY - rect.top) / rect.height, 0, 1);
+    state.textMarquee = { startX, startY, x: startX, y: startY, w: 0, h: 0, moved: false, additive: event.ctrlKey || event.metaKey || event.shiftKey, pointerId: event.pointerId };
+    els.overlay.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+    return;
+  }
   if (state.tool === 'select' && !state.panMode && !state.spacePan && event.target === els.overlay) {
     const startX = clamp((event.clientX - rect.left) / rect.width, 0, 1);
     const startY = clamp((event.clientY - rect.top) / rect.height, 0, 1);
@@ -863,14 +927,16 @@ els.overlay.onpointermove = (event) => {
     ]);
     return;
   }
-  if (!state.marquee) return;
+  const activeMarquee = state.textMarquee || state.marquee;
+  if (!activeMarquee) return;
   const rect = els.overlay.getBoundingClientRect();
   const currentX = clamp((event.clientX - rect.left) / rect.width, 0, 1);
   const currentY = clamp((event.clientY - rect.top) / rect.height, 0, 1);
-  state.marquee.x = Math.min(state.marquee.startX, currentX);
-  state.marquee.y = Math.min(state.marquee.startY, currentY);
-  state.marquee.w = Math.abs(currentX - state.marquee.startX);
-  state.marquee.h = Math.abs(currentY - state.marquee.startY);
+  activeMarquee.x = Math.min(activeMarquee.startX, currentX);
+  activeMarquee.y = Math.min(activeMarquee.startY, currentY);
+  activeMarquee.w = Math.abs(currentX - activeMarquee.startX);
+  activeMarquee.h = Math.abs(currentY - activeMarquee.startY);
+  if (state.textMarquee && Math.hypot(event.clientX - (rect.left + activeMarquee.startX * rect.width), event.clientY - (rect.top + activeMarquee.startY * rect.height)) > 5) activeMarquee.moved = true;
   renderAnnotations();
 };
 
@@ -883,6 +949,19 @@ els.overlay.onpointerup = () => {
     const points = state.draw.pts.map((point) => `${((point[0] - minX) / (maxX - minX || 1)) * 100},${((point[1] - minY) / (maxY - minY || 1)) * 100}`).join(' ');
     addAnn({ type: 'draw', x: minX / 100, y: minY / 100, w: Math.max(0.03, (maxX - minX) / 100), h: Math.max(0.03, (maxY - minY) / 100), points, color: '#6d5dfc', opacity: 1 });
     state.draw = null;
+    return;
+  }
+  if (state.textMarquee) {
+    const box = state.textMarquee;
+    try { if (els.overlay.hasPointerCapture?.(box.pointerId)) els.overlay.releasePointerCapture(box.pointerId); } catch (_) {}
+    state.textMarquee = null;
+    if (box.moved) {
+      const matches = editableTextItemsInBox(box);
+      if (matches.length) convertDetectedItems(matches, { additive: box.additive });
+      else { renderAnnotations(); if (!box.additive) clearSelection(); }
+    } else {
+      renderAnnotations();
+    }
     return;
   }
   if (!state.marquee) return;
@@ -919,6 +998,7 @@ function textDefaults(text = 'Edit this text') {
 
 function setTool(tool, rerender = true) {
   state.tool = tool;
+  state.textMarquee = null;
   $$('.tool').forEach((button) => button.classList.toggle('active', button.dataset.tool === tool));
   els.editHint.classList.toggle('hidden', tool !== 'editpdf');
   els.overlay.classList.toggle('editing-pdf', tool === 'editpdf');
@@ -936,7 +1016,7 @@ $$('.tool').forEach((button) => {
         toast('No PDF text layer found — trying text recognition…');
         count = (await detectTextWithOCR()).length;
       }
-      if (count) toast('Tap a highlighted text item to edit it.');
+      if (count) toast('Click text, Ctrl/Cmd + click several items, or drag across a group.');
     }
     if (tool === 'text') addAnn(textDefaults());
     if (tool === 'whiteout') addAnn({ ...defaultPos(), type: 'whiteout', w: 0.28, h: 0.05, color: '#ffffff', opacity: 1 });
@@ -950,6 +1030,8 @@ $$('.tool').forEach((button) => {
 });
 
 $('#exitEditMode').onclick = () => setTool('select');
+$('#selectAllTextBtn').onclick = selectAllEditableText;
+$('#clearTextSelectionBtn').onclick = () => clearSelection();
 
 els.imageInput.onchange = (event) => {
   const file = event.target.files[0];
@@ -2033,7 +2115,7 @@ window.addEventListener('keydown', (event) => {
   if (command && key === 'x') { event.preventDefault(); copySelection(true); }
   if (command && key === 'v') { event.preventDefault(); pasteClipboard(); }
   if (command && key === 'd') { event.preventDefault(); duplicateSelection(); }
-  if (command && key === 'a' && state.view === 'edit') { event.preventDefault(); selectAllAnnotations(); }
+  if (command && key === 'a' && state.view === 'edit') { event.preventDefault(); state.tool === 'editpdf' ? selectAllEditableText() : selectAllAnnotations(); }
   if (command && key === 'g') { event.preventDefault(); event.shiftKey ? ungroupSelection() : groupSelection(); }
   if ((event.key === 'Delete' || event.key === 'Backspace') && state.selectedIds.size) { event.preventDefault(); deleteSelectedAnnotations(); }
   if (event.key === 'Escape') { hideContextMenu(); if (state.tool === 'editpdf') setTool('select'); else clearSelection(); }

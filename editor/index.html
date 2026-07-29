@@ -11,7 +11,7 @@
   <link rel="apple-touch-icon" href="../assets/icon-192.png">
   <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
   <link rel="manifest" href="../manifest.webmanifest" />
-  <link rel="stylesheet" href="styles.css?v=1.0.1" />
+  <link rel="stylesheet" href="styles.css?v=1.0.4" />
 </head>
 <body>
   <div id="app" class="app">
@@ -99,8 +99,12 @@
         <div class="canvas-shell">
           <div id="editHint" class="edit-hint hidden">
             <span class="edit-hint-icon">⌁</span>
-            <div><strong>Edit existing text</strong><small>Hover a text line and click it</small></div>
-            <button id="exitEditMode" title="Exit edit mode">×</button>
+            <div><strong>Edit existing text</strong><small>Drag across text or Ctrl/Cmd + click to select several items</small></div>
+            <div class="edit-hint-actions">
+              <button id="selectAllTextBtn" class="edit-hint-action" type="button" title="Select all editable text on this page">Select all</button>
+              <button id="clearTextSelectionBtn" class="edit-hint-action" type="button" title="Clear the current selection">Clear</button>
+              <button id="exitEditMode" title="Exit edit mode">×</button>
+            </div>
           </div>
           <div class="zoom-row" aria-label="Document navigation">
             <button id="panBtn" class="mini-btn pan-btn" title="Pan document — drag with the mouse (H)">✋</button>
@@ -323,6 +327,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js" crossorigin="anonymous"></script>
   <script defer src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js" crossorigin="anonymous"></script>
-  <script type="module" src="app.js?v=1.0.0"></script>
+  <script type="module" src="app.js?v=1.0.4"></script>
 </body>
 </html>

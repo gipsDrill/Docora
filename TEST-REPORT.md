@@ -26,3 +26,12 @@ The validation environment blocks external CDN requests and local HTTP navigatio
 4. A rotated or mixed-orientation document.
 5. A scanned PDF, to confirm the documented text-editing limitation.
 6. A password-protected PDF, to confirm the error state.
+
+
+## v1.0.4 validation
+
+- JavaScript syntax checked with Node.js.
+- Verified Edit PDF drag-selection state and rectangle rendering.
+- Verified Ctrl/Cmd/Shift additive selection for detected text and existing annotations.
+- Verified Ctrl/Cmd+A routing to all editable PDF text while Edit PDF mode is active.
+- Verified cache-busting versions for editor JavaScript and CSS.

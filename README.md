@@ -1,3 +1,12 @@
+
+## Docora v1.0.4 — advanced text selection
+
+- Drag a selection rectangle across detected PDF text to convert and select multiple text cells in one action.
+- Use Ctrl + left click on Windows/Linux or Cmd + click on macOS to add or remove individual text cells from the selection.
+- Ctrl/Cmd + A in Edit PDF mode selects all editable text on the current page.
+- Added Select all and Clear controls to the Edit PDF helper panel.
+- Multi-selected text can be moved, aligned, distributed, grouped, duplicated or deleted with the existing multi-selection controls.
+
 # Docora 1.0 — production package
 
 Docora is a browser-based PDF editing workspace created as a sister product to Billora.
