@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=0.4-editable" />
+  <link rel="stylesheet" href="styles.css?v=0.6-free-canvas-pages" />
 </head>
 <body>
   <div id="app" class="app">
@@ -56,6 +56,18 @@
       </aside>
 
       <section class="editor-area">
+        <div class="workspace-tabs" role="tablist" aria-label="Document workspace">
+          <button id="editViewTab" class="workspace-tab active" type="button" role="tab" aria-selected="true">
+            <span class="workspace-tab-icon">✦</span>
+            <span><strong>Edit document</strong><small>Text, signatures and annotations</small></span>
+          </button>
+          <button id="pagesViewTab" class="workspace-tab" type="button" role="tab" aria-selected="false">
+            <span class="workspace-tab-icon">▦</span>
+            <span><strong>Organise pages</strong><small><b id="pageCountLabel">0</b> pages · reorder, rotate and delete</small></span>
+          </button>
+          <div class="workspace-tip" id="workspaceTip">Wheel to scroll · drag the dark canvas to move · Space + drag anywhere</div>
+        </div>
+
         <div class="toolbar" id="toolbar">
           <button data-tool="select" class="tool active"><span>↖</span>Select</button>
           <button data-tool="editpdf" class="tool edit-tool"><span>⌁</span>Edit PDF</button>
@@ -80,6 +92,8 @@
           </div>
           <div class="zoom-row" aria-label="Document navigation">
             <button id="panBtn" class="mini-btn pan-btn" title="Pan document — drag with the mouse (H)">✋</button>
+            <button id="centerViewBtn" class="mini-btn" title="Centre document">◎</button>
+            <button id="fitViewBtn" class="mini-btn fit-btn" title="Fit page to window">Fit</button>
             <span class="zoom-divider" aria-hidden="true"></span>
             <button id="zoomOut" class="mini-btn" title="Zoom out">−</button>
             <span id="zoomLabel">100%</span>
@@ -94,6 +108,29 @@
             </div>
           </div>
         </div>
+
+        <section id="pagesManager" class="pages-manager hidden" aria-label="Organise all PDF pages">
+          <div class="pages-manager-head">
+            <div>
+              <span class="eyebrow">DOCUMENT STRUCTURE</span>
+              <h2>Organise all pages</h2>
+              <p>Drag pages into a new order or select several pages to apply an action in one step.</p>
+            </div>
+            <div class="pages-manager-actions">
+              <button id="selectAllPagesBtn" class="manager-btn" type="button">Select all</button>
+              <button id="clearPageSelectionBtn" class="manager-btn" type="button">Clear</button>
+              <span class="manager-divider" aria-hidden="true"></span>
+              <button id="rotateSelectedPagesBtn" class="manager-btn" type="button" disabled>↻ Rotate</button>
+              <button id="duplicateSelectedPagesBtn" class="manager-btn" type="button" disabled>⧉ Duplicate</button>
+              <button id="deleteSelectedPagesBtn" class="manager-btn danger" type="button" disabled>Delete</button>
+            </div>
+          </div>
+          <div class="page-selection-summary">
+            <span id="pageSelectionText">No pages selected</span>
+            <span>Tip: double-click a page to open it in the editor.</span>
+          </div>
+          <div id="pagesGrid" class="pages-grid"></div>
+        </section>
       </section>
 
       <aside class="properties">
@@ -192,6 +229,6 @@
 
   <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
   <script defer src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-  <script type="module" src="app.js?v=0.5-pan-navigation"></script>
+  <script type="module" src="app.js?v=0.6-free-canvas-pages"></script>
 </body>
 </html>

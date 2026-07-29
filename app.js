@@ -21,6 +21,9 @@ const state = {
   panMode: false,
   spacePan: false,
   pan: null,
+  view: 'edit',
+  pageSelection: new Set(),
+  pendingStageCenter: true,
 };
 
 const els = {
@@ -42,6 +45,13 @@ const els = {
   imageInput: $('#imageInput'),
   toast: $('#toast'),
   editHint: $('#editHint'),
+  editViewTab: $('#editViewTab'),
+  pagesViewTab: $('#pagesViewTab'),
+  pagesManager: $('#pagesManager'),
+  pagesGrid: $('#pagesGrid'),
+  pageCountLabel: $('#pageCountLabel'),
+  pageSelectionText: $('#pageSelectionText'),
+  workspaceTip: $('#workspaceTip'),
 };
 
 function toast(message) {
@@ -60,7 +70,8 @@ function pageRotation(page) {
 }
 
 function serialisablePages() {
-  return state.pages.map(({ source, baseRotation, rotation, annotations }) => ({
+  return state.pages.map(({ pageId, source, baseRotation, rotation, annotations }) => ({
+    pageId,
     source,
     baseRotation,
     rotation,
@@ -85,7 +96,8 @@ function checkpoint() {
 
 function restore(data) {
   const snapshot = JSON.parse(data);
-  state.pages = snapshot.pages.map((page) => ({ ...page, detectedText: null }));
+  state.pages = snapshot.pages.map((page) => ({ ...page, pageId: page.pageId || uid(), detectedText: null }));
+  state.pageSelection = new Set([...state.pageSelection].filter((pageId) => state.pages.some((page) => page.pageId === pageId)));
   state.current = Math.min(snapshot.current, state.pages.length - 1);
   state.selected = null;
   renderAll();
@@ -109,6 +121,7 @@ async function loadPDF(file) {
     for (let index = 0; index < state.pdfDoc.numPages; index += 1) {
       const page = await state.pdfDoc.getPage(index + 1);
       state.pages.push({
+        pageId: uid(),
         source: index,
         baseRotation: page.rotate || 0,
         rotation: 0,
@@ -120,6 +133,9 @@ async function loadPDF(file) {
     state.current = 0;
     state.history = [];
     state.future = [];
+    state.pageSelection = new Set();
+    state.pendingStageCenter = true;
+    setWorkspaceView('edit', false);
     els.landing.classList.add('hidden');
     els.workspace.classList.remove('hidden');
     els.download.disabled = false;
@@ -132,8 +148,13 @@ async function loadPDF(file) {
 }
 
 async function renderAll() {
+  els.pageCountLabel.textContent = state.pages.length;
   await renderThumbs();
-  await renderPage();
+  if (state.view === 'pages') {
+    await renderPageManager();
+  } else {
+    await renderPage();
+  }
   updateUndo();
 }
 
@@ -159,11 +180,13 @@ async function renderThumbs() {
         checkpoint();
         pageState.rotation = (pageState.rotation + 90) % 360;
         pageState.detectedText = null;
+        state.pendingStageCenter = true;
         renderAll();
         return;
       }
       state.current = index;
       state.selected = null;
+      state.pendingStageCenter = true;
       renderAll();
     };
 
@@ -178,6 +201,7 @@ async function renderThumbs() {
       const [moved] = state.pages.splice(from, 1);
       state.pages.splice(to, 0, moved);
       state.current = to;
+      state.pendingStageCenter = true;
       renderAll();
     };
   });
@@ -218,6 +242,7 @@ async function renderPage() {
   els.canvas.style.height = `${cssViewport.height}px`;
   els.pageWrap.style.width = `${cssViewport.width}px`;
   els.pageWrap.style.height = `${cssViewport.height}px`;
+  updateVirtualStageSpace();
 
   const context = els.canvas.getContext('2d', { alpha: false });
   context.imageSmoothingEnabled = true;
@@ -232,6 +257,11 @@ async function renderPage() {
   renderAnnotations();
   showProps(currentAnn() || null);
   els.zoomLabel.textContent = `${Math.round(state.scale * 100)}%`;
+
+  if (state.pendingStageCenter) {
+    state.pendingStageCenter = false;
+    requestAnimationFrame(centerPageInStage);
+  }
 }
 
 async function detectTextItems(page, viewport, cssScale, sourcePage) {
@@ -760,6 +790,7 @@ $('#rotateBtn').onclick = () => {
   const pageState = state.pages[state.current];
   pageState.rotation = (pageState.rotation + 90) % 360;
   pageState.detectedText = null;
+  state.pendingStageCenter = true;
   renderAll();
 };
 
@@ -768,27 +799,306 @@ $('#deletePageBtn').onclick = () => {
   checkpoint();
   state.pages.splice(state.current, 1);
   state.current = Math.max(0, state.current - 1);
+  state.pageSelection.clear();
+  state.pendingStageCenter = true;
   renderAll();
 };
 
-async function setZoom(nextScale) {
+function updateVirtualStageSpace() {
   const stage = els.pageStage;
-  const previousWidth = Math.max(stage.scrollWidth, 1);
-  const previousHeight = Math.max(stage.scrollHeight, 1);
-  const centreX = (stage.scrollLeft + stage.clientWidth / 2) / previousWidth;
-  const centreY = (stage.scrollTop + stage.clientHeight / 2) / previousHeight;
+  if (!stage || !els.pageWrap.offsetWidth) return;
+  const padX = Math.max(260, Math.round(stage.clientWidth * 0.72));
+  const padY = Math.max(240, Math.round(stage.clientHeight * 0.72));
+  els.pageStageContent.style.setProperty('--free-pad-x', `${padX}px`);
+  els.pageStageContent.style.setProperty('--free-pad-y', `${padY}px`);
+}
 
-  state.scale = clamp(nextScale, 0.5, 2.5);
-  await renderPage();
+function centrePointOnPage() {
+  const stage = els.pageStage;
+  const wrap = els.pageWrap;
+  return {
+    x: (stage.scrollLeft + stage.clientWidth / 2 - wrap.offsetLeft) / Math.max(wrap.offsetWidth, 1),
+    y: (stage.scrollTop + stage.clientHeight / 2 - wrap.offsetTop) / Math.max(wrap.offsetHeight, 1),
+  };
+}
 
-  requestAnimationFrame(() => {
-    stage.scrollLeft = Math.max(0, centreX * stage.scrollWidth - stage.clientWidth / 2);
-    stage.scrollTop = Math.max(0, centreY * stage.scrollHeight - stage.clientHeight / 2);
+function scrollPagePointToCentre(point = { x: 0.5, y: 0.5 }) {
+  const stage = els.pageStage;
+  const wrap = els.pageWrap;
+  stage.scrollLeft = wrap.offsetLeft + clamp(point.x, -0.6, 1.6) * wrap.offsetWidth - stage.clientWidth / 2;
+  stage.scrollTop = wrap.offsetTop + clamp(point.y, -0.6, 1.6) * wrap.offsetHeight - stage.clientHeight / 2;
+}
+
+function centerPageInStage() {
+  updateVirtualStageSpace();
+  scrollPagePointToCentre({ x: 0.5, y: 0.5 });
+}
+
+
+function setWorkspaceView(view, render = true) {
+  state.view = view === 'pages' ? 'pages' : 'edit';
+  const pagesMode = state.view === 'pages';
+  els.workspace.classList.toggle('pages-mode', pagesMode);
+  els.pagesManager.classList.toggle('hidden', !pagesMode);
+  els.editViewTab.classList.toggle('active', !pagesMode);
+  els.pagesViewTab.classList.toggle('active', pagesMode);
+  els.editViewTab.setAttribute('aria-selected', String(!pagesMode));
+  els.pagesViewTab.setAttribute('aria-selected', String(pagesMode));
+  if (!pagesMode) state.pendingStageCenter = true;
+  if (render && state.pages.length) renderAll();
+}
+
+function pageById(pageId) {
+  return state.pages.find((page) => page.pageId === pageId);
+}
+
+function clonePageState(pageState) {
+  return {
+    ...structuredClone(pageState),
+    pageId: uid(),
+    annotations: pageState.annotations.map((annotation) => ({ ...structuredClone(annotation), id: uid() })),
+    detectedText: null,
+  };
+}
+
+function updatePageSelectionUI() {
+  const selectedCount = state.pageSelection.size;
+  const total = state.pages.length;
+  els.pageSelectionText.textContent = selectedCount ? `${selectedCount} of ${total} pages selected` : 'No pages selected';
+  $('#rotateSelectedPagesBtn').disabled = !selectedCount;
+  $('#duplicateSelectedPagesBtn').disabled = !selectedCount;
+  $('#deleteSelectedPagesBtn').disabled = !selectedCount || selectedCount >= total;
+  $('#selectAllPagesBtn').textContent = selectedCount === total && total ? 'All selected' : 'Select all';
+}
+
+async function renderPageManager() {
+  if (!els.pagesGrid) return;
+  els.pageCountLabel.textContent = state.pages.length;
+  state.pageSelection = new Set([...state.pageSelection].filter((pageId) => pageById(pageId)));
+  els.pagesGrid.innerHTML = '';
+
+  const renderJobs = state.pages.map((pageState, index) => {
+    const card = document.createElement('article');
+    card.className = `page-card${state.pageSelection.has(pageState.pageId) ? ' selected' : ''}`;
+    card.draggable = true;
+    card.dataset.pageId = pageState.pageId;
+    card.dataset.index = index;
+
+    const top = document.createElement('div');
+    top.className = 'page-card-top';
+    const selection = document.createElement('label');
+    selection.className = 'page-card-select';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.checked = state.pageSelection.has(pageState.pageId);
+    const selectionLabel = document.createElement('span');
+    selectionLabel.textContent = `Page ${index + 1}`;
+    selection.append(checkbox, selectionLabel);
+    const handle = document.createElement('span');
+    handle.className = 'page-drag-handle';
+    handle.textContent = '⠿';
+    handle.title = 'Drag to reorder';
+    const statusWrap = document.createElement('div');
+    statusWrap.style.display = 'flex';
+    statusWrap.style.alignItems = 'center';
+    statusWrap.style.gap = '7px';
+    if (pageState.annotations.length) {
+      const edited = document.createElement('span');
+      edited.className = 'page-card-edited';
+      edited.textContent = 'EDITED';
+      statusWrap.append(edited);
+    }
+    statusWrap.append(handle);
+    top.append(selection, statusWrap);
+
+    const preview = document.createElement('div');
+    preview.className = 'page-card-preview';
+    const canvas = document.createElement('canvas');
+    preview.append(canvas);
+
+    const footer = document.createElement('div');
+    footer.className = 'page-card-footer';
+    const number = document.createElement('div');
+    number.className = 'page-card-number';
+    number.innerHTML = `<strong>Page ${index + 1}</strong><small>Double-click to edit</small>`;
+    const actions = document.createElement('div');
+    actions.className = 'page-card-actions';
+    const rotate = document.createElement('button');
+    rotate.type = 'button'; rotate.className = 'page-card-action'; rotate.title = 'Rotate page'; rotate.textContent = '↻';
+    const duplicate = document.createElement('button');
+    duplicate.type = 'button'; duplicate.className = 'page-card-action'; duplicate.title = 'Duplicate page'; duplicate.textContent = '⧉';
+    const remove = document.createElement('button');
+    remove.type = 'button'; remove.className = 'page-card-action danger'; remove.title = 'Delete page'; remove.textContent = '×';
+    actions.append(rotate, duplicate, remove);
+    footer.append(number, actions);
+    card.append(top, preview, footer);
+    els.pagesGrid.append(card);
+
+    const setSelected = (checked) => {
+      checked ? state.pageSelection.add(pageState.pageId) : state.pageSelection.delete(pageState.pageId);
+      checkbox.checked = checked;
+      card.classList.toggle('selected', checked);
+      updatePageSelectionUI();
+    };
+
+    checkbox.onchange = () => setSelected(checkbox.checked);
+    card.onclick = (event) => {
+      if (event.target.closest('button,label')) return;
+      setSelected(!state.pageSelection.has(pageState.pageId));
+    };
+    card.ondblclick = (event) => {
+      if (event.target.closest('button,label')) return;
+      state.current = state.pages.findIndex((page) => page.pageId === pageState.pageId);
+      state.selected = null;
+      setWorkspaceView('edit');
+    };
+    rotate.onclick = async (event) => {
+      event.stopPropagation();
+      checkpoint();
+      pageState.rotation = (pageState.rotation + 90) % 360;
+      pageState.detectedText = null;
+      await renderAll();
+    };
+    duplicate.onclick = (event) => {
+      event.stopPropagation();
+      checkpoint();
+      const currentIndex = state.pages.findIndex((page) => page.pageId === pageState.pageId);
+      state.pages.splice(currentIndex + 1, 0, clonePageState(pageState));
+      renderAll();
+    };
+    remove.onclick = (event) => {
+      event.stopPropagation();
+      if (state.pages.length === 1) return toast('A PDF must contain at least one page.');
+      checkpoint();
+      const currentIndex = state.pages.findIndex((page) => page.pageId === pageState.pageId);
+      state.pages.splice(currentIndex, 1);
+      state.pageSelection.delete(pageState.pageId);
+      state.current = clamp(state.current, 0, state.pages.length - 1);
+      renderAll();
+    };
+
+    card.ondragstart = (event) => {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/page-id', pageState.pageId);
+      event.dataTransfer.setData('text/plain', pageState.pageId);
+      card.classList.add('dragging');
+    };
+    card.ondragend = () => {
+      card.classList.remove('dragging');
+      $$('.page-card').forEach((item) => item.classList.remove('drag-over'));
+    };
+    card.ondragover = (event) => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      card.classList.add('drag-over');
+    };
+    card.ondragleave = () => card.classList.remove('drag-over');
+    card.ondrop = (event) => {
+      event.preventDefault();
+      card.classList.remove('drag-over');
+      const fromId = event.dataTransfer.getData('text/page-id') || event.dataTransfer.getData('text/plain');
+      if (!fromId || fromId === pageState.pageId) return;
+      const from = state.pages.findIndex((page) => page.pageId === fromId);
+      const to = state.pages.findIndex((page) => page.pageId === pageState.pageId);
+      if (from < 0 || to < 0) return;
+      checkpoint();
+      const [moved] = state.pages.splice(from, 1);
+      const insertAt = from < to ? to - 1 : to;
+      state.pages.splice(insertAt, 0, moved);
+      state.current = state.pages.findIndex((page) => page.pageId === moved.pageId);
+      renderAll();
+    };
+
+    return renderManagerCanvas(canvas, pageState);
   });
+
+  updatePageSelectionUI();
+  await Promise.allSettled(renderJobs);
+}
+
+async function renderManagerCanvas(canvas, pageState) {
+  const page = await state.pdfDoc.getPage(pageState.source + 1);
+  const rotation = pageRotation(pageState);
+  const base = page.getViewport({ scale: 1, rotation });
+  const targetWidth = 170;
+  const cssScale = targetWidth / Math.max(base.width, 1);
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const cssViewport = page.getViewport({ scale: cssScale, rotation });
+  const renderViewport = page.getViewport({ scale: cssScale * dpr, rotation });
+  canvas.width = Math.ceil(renderViewport.width);
+  canvas.height = Math.ceil(renderViewport.height);
+  canvas.style.width = `${Math.ceil(cssViewport.width)}px`;
+  canvas.style.height = `${Math.ceil(cssViewport.height)}px`;
+  const context = canvas.getContext('2d', { alpha: false });
+  context.imageSmoothingEnabled = true;
+  context.imageSmoothingQuality = 'high';
+  await page.render({ canvasContext: context, viewport: renderViewport, background: '#ffffff' }).promise;
+}
+
+els.editViewTab.onclick = () => setWorkspaceView('edit');
+els.pagesViewTab.onclick = () => setWorkspaceView('pages');
+$('#selectAllPagesBtn').onclick = () => {
+  state.pageSelection = new Set(state.pages.map((page) => page.pageId));
+  renderPageManager();
+};
+$('#clearPageSelectionBtn').onclick = () => {
+  state.pageSelection.clear();
+  renderPageManager();
+};
+$('#rotateSelectedPagesBtn').onclick = () => {
+  if (!state.pageSelection.size) return;
+  checkpoint();
+  state.pages.forEach((page) => {
+    if (!state.pageSelection.has(page.pageId)) return;
+    page.rotation = (page.rotation + 90) % 360;
+    page.detectedText = null;
+  });
+  renderAll();
+};
+$('#duplicateSelectedPagesBtn').onclick = () => {
+  if (!state.pageSelection.size) return;
+  checkpoint();
+  const selected = state.pages.filter((page) => state.pageSelection.has(page.pageId));
+  const newPages = [];
+  state.pages.forEach((page) => {
+    newPages.push(page);
+    if (state.pageSelection.has(page.pageId)) newPages.push(clonePageState(page));
+  });
+  state.pages = newPages;
+  state.pageSelection = new Set(selected.map((page) => page.pageId));
+  renderAll();
+};
+$('#deleteSelectedPagesBtn').onclick = () => {
+  if (!state.pageSelection.size) return;
+  if (state.pageSelection.size >= state.pages.length) return toast('A PDF must contain at least one page.');
+  checkpoint();
+  state.pages = state.pages.filter((page) => !state.pageSelection.has(page.pageId));
+  state.pageSelection.clear();
+  state.current = clamp(state.current, 0, state.pages.length - 1);
+  renderAll();
+};
+
+async function setZoom(nextScale, focusPoint = null) {
+  const point = focusPoint || centrePointOnPage();
+  state.scale = clamp(nextScale, 0.4, 4);
+  await renderPage();
+  requestAnimationFrame(() => scrollPagePointToCentre(point));
 }
 
 $('#zoomIn').onclick = () => setZoom(state.scale + 0.1);
 $('#zoomOut').onclick = () => setZoom(state.scale - 0.1);
+$('#centerViewBtn').onclick = centerPageInStage;
+$('#fitViewBtn').onclick = async () => {
+  if (!state.pages.length) return;
+  const pageState = state.pages[state.current];
+  const page = await state.pdfDoc.getPage(pageState.source + 1);
+  const viewport = page.getViewport({ scale: BASE_RENDER_SCALE, rotation: pageRotation(pageState) });
+  const availableWidth = Math.max(220, els.pageStage.clientWidth - 120);
+  const availableHeight = Math.max(220, els.pageStage.clientHeight - 120);
+  const fitScale = Math.min(availableWidth / viewport.width, availableHeight / viewport.height);
+  state.pendingStageCenter = true;
+  await setZoom(clamp(fitScale, 0.4, 4), { x: 0.5, y: 0.5 });
+};
 
 function updatePanUI() {
   const ready = state.panMode || state.spacePan;
@@ -812,13 +1122,15 @@ function stopPanning(pointerId) {
 els.panBtn.onclick = () => {
   state.panMode = !state.panMode;
   updatePanUI();
-  toast(state.panMode ? 'Hand tool active — drag to move around the PDF.' : 'Hand tool off.');
+  toast(state.panMode ? 'Hand tool active — drag anywhere to move around the PDF.' : 'Hand tool off. Drag the dark canvas or use the mouse wheel.');
 };
 
 els.pageStage.addEventListener('pointerdown', (event) => {
-  const temporaryPan = event.button === 1 || state.spacePan;
+  const darkCanvasDrag = event.button === 0 && (event.target === els.pageStage || event.target === els.pageStageContent);
+  const temporaryPan = event.button === 1 || state.spacePan || darkCanvasDrag;
   if (!state.panMode && !temporaryPan) return;
   if (event.button !== 0 && event.button !== 1) return;
+  if (event.target.closest?.('.annotation,.pdf-text-target,[contenteditable="true"]') && !state.spacePan && event.button !== 1) return;
 
   event.preventDefault();
   event.stopPropagation();
@@ -850,10 +1162,33 @@ els.pageStage.addEventListener('auxclick', (event) => {
 });
 
 els.pageStage.addEventListener('wheel', (event) => {
-  if (!event.shiftKey || Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return;
+  if (event.ctrlKey || event.metaKey) {
+    event.preventDefault();
+    const rect = els.pageWrap.getBoundingClientRect();
+    const focusPoint = {
+      x: (event.clientX - rect.left) / Math.max(rect.width, 1),
+      y: (event.clientY - rect.top) / Math.max(rect.height, 1),
+    };
+    setZoom(state.scale + (event.deltaY < 0 ? 0.1 : -0.1), focusPoint);
+    return;
+  }
+
   event.preventDefault();
-  els.pageStage.scrollLeft += event.deltaY;
+  const multiplier = event.deltaMode === 1 ? 18 : event.deltaMode === 2 ? els.pageStage.clientHeight : 1;
+  if (event.shiftKey) {
+    els.pageStage.scrollLeft += event.deltaY * multiplier + event.deltaX * multiplier;
+  } else {
+    els.pageStage.scrollTop += event.deltaY * multiplier;
+    els.pageStage.scrollLeft += event.deltaX * multiplier;
+  }
 }, { passive: false });
+
+new ResizeObserver(() => {
+  if (state.view !== 'edit' || !state.pages.length) return;
+  const point = centrePointOnPage();
+  updateVirtualStageSpace();
+  requestAnimationFrame(() => scrollPagePointToCentre(point));
+}).observe(els.pageStage);
 
 window.addEventListener('keydown', (event) => {
   const target = event.target;
