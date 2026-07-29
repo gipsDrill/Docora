@@ -1,23 +1,98 @@
-# Docora v0.6 — Free Canvas & Page Organiser
+# Docora 1.0 — production package
 
-A browser-based PDF editor prototype. Documents are processed locally in the browser.
+Docora is a browser-based PDF editing workspace created as a sister product to Billora.
+
+## Included
+
+- SEO-focused marketing homepage
+- Full-screen PDF editor under `/editor/`
+- Existing text detection and visual replacement
+- Text formatting: fonts, size, bold, italic, underline, alignment, lists, indentation, line height, letter spacing, colour and background
+- Text, images, signatures, whiteout, drawing, highlights, shapes, dates and checkboxes
+- Multiple selection by drag box and Shift-click
+- Copy, cut, paste, duplicate, delete and select-all
+- Right-click context menu
+- Grouping, layering, object locking, alignment and distribution
+- Smart alignment guides and optional grid snapping; hold `Alt` while dragging to temporarily disable snapping
+- Free panning, scrollbars, wheel scrolling and zoom around the pointer
+- Separate all-pages organiser with reorder, rotate, duplicate and delete actions
+- Undo/redo history
+- Local autosave and last-session recovery
+- Editable `.docora` project export/import
+- Responsive desktop, tablet and mobile layouts
+- Loading and export progress feedback for larger documents
+- Last-used text styling remembered for newly added text
+- Privacy, terms, help and 404 pages
+- Sitemap, robots, Open Graph image, manifest and app icons
 
 ## Run locally
 
-Use VS Code with the **Live Server** extension, or publish the folder with GitHub Pages. Open `index.html` through an HTTP address rather than `file://`.
+The editor uses JavaScript modules and must be served through HTTP rather than opened directly as a `file://` page.
 
-## New in v0.6
+### Visual Studio Code
 
-- Large virtual workspace around every PDF page, available at every zoom level.
-- Vertical mouse-wheel navigation and horizontal Shift + wheel navigation.
-- Drag the dark canvas with the left mouse button.
-- Hand tool, Space + drag and middle-mouse drag remain available.
-- Zoom keeps the same point of the document under the viewport centre.
-- One-click **Centre** and **Fit page** controls.
-- Separate **Organise pages** workspace with every page visible at once.
-- Drag-and-drop reordering, multi-selection, batch rotate, duplicate and delete.
-- Double-click a page card to return directly to that page in the editor.
+Open this folder and use the **Live Server** extension.
 
-## External libraries
+### Node.js
 
-The prototype loads PDF.js, pdf-lib and fontkit from public CDNs, so an internet connection is required when starting the app.
+```bash
+npx serve .
+```
+
+Then open the address shown in the terminal.
+
+## Deployment
+
+The package can be uploaded directly to GitHub Pages, Cloudflare Pages, Netlify or standard static hosting.
+
+The included canonical URLs, sitemap and Open Graph URLs use:
+
+```text
+https://docora.goodform.org.uk
+```
+
+Before launching under another domain, search the project for that address and replace it with the final URL. Also update `robots.txt`, `sitemap.xml` and the Open Graph URLs in `index.html`.
+
+For GitHub Pages with a custom domain, copy `CNAME.example` to a file named `CNAME`, then replace its content with the final domain.
+
+## External dependencies
+
+PDF.js, pdf-lib and fontkit are loaded from pinned CDN URLs. The PDF document itself is processed in the browser and is not uploaded by Docora. Loading CDN files can still expose standard network metadata to those CDN providers.
+
+For a fully self-hosted dependency build, download the pinned library files, place them under a local `vendor/` folder, update the script/import paths, and adjust the privacy notice accordingly.
+
+## Important PDF limitation
+
+PDF is a final-layout format rather than a normal word-processing document. Docora can detect and visually replace many existing text items, but no browser editor can guarantee native editing of every PDF. Scans, text converted to vector outlines, unusual embedded fonts, protected files and complex backgrounds may require whiteout-and-replace or OCR.
+
+## Production checks before launch
+
+1. Replace the provisional domain if needed.
+2. Review the privacy and terms pages for the final business and hosting setup.
+3. Test on Chrome, Edge, Firefox and Safari.
+4. Test at least one scanned PDF, one long PDF and one document with Polish characters.
+5. Confirm the exported PDF visually before relying on it.
+6. Connect the domain, enable HTTPS, submit `sitemap.xml` to Google Search Console and verify the Open Graph image.
+
+## Keyboard shortcuts
+
+- `Ctrl/Cmd + C`, `X`, `V` — copy, cut, paste
+- `Ctrl/Cmd + D` — duplicate
+- `Ctrl/Cmd + A` — select all elements on the current page
+- `Ctrl/Cmd + G` — group
+- `Shift + Ctrl/Cmd + G` — ungroup
+- `Delete` — delete selected unlocked elements
+- `Ctrl/Cmd + Z`, `Y` — undo and redo
+- `H` — toggle the hand tool
+- `Space + drag` — temporary hand tool
+- `Ctrl/Cmd + wheel` — zoom
+- `Shift + wheel` — horizontal scroll
+- `Alt + drag` — temporarily bypass smart guides and grid snapping
+
+## Branding
+
+Footer attribution:
+
+```text
+© Goodform. All rights reserved. goodform.org.uk
+```

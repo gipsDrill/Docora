@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /editor/
+Sitemap: https://docora.goodform.org.uk/sitemap.xml

@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="Edit PDF text, pages, signatures and annotations privately in your browser with Docora." />
+  <meta name="robots" content="noindex,follow" />
+  <meta name="theme-color" content="#090d15" />
+  <title>Docora Editor — Private browser-based PDF editing</title>
+  <link rel="apple-touch-icon" href="../assets/icon-192.png">
+  <link rel="icon" href="../assets/favicon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="../manifest.webmanifest" />
+  <link rel="stylesheet" href="styles.css?v=1.0.0" />
+</head>
+<body>
+  <div id="app" class="app">
+    <header class="topbar">
+      <a class="brand" href="../" aria-label="Docora home">
+        <span class="brand-mark">D</span>
+        <span>Docora</span>
+        <span class="beta">BETA</span>
+      </a>
+      <div class="top-actions">
+        <button id="pagesDrawerBtn" class="mobile-panel-btn" type="button" title="Pages">▤</button>
+        <button id="propsDrawerBtn" class="mobile-panel-btn" type="button" title="Properties">⚙</button>
+        <span class="privacy-pill"><span class="status-dot"></span>Processed locally</span>
+        <button id="saveProjectBtn" class="top-secondary" title="Save an editable Docora project">Save project</button>
+        <button id="openProjectBtn" class="top-secondary" title="Open a Docora project">Open project</button>
+        <input id="projectInput" type="file" accept=".docora,application/json" hidden>
+        <button id="undoBtn" class="icon-btn" title="Undo (Ctrl+Z)" disabled>↶</button>
+        <button id="redoBtn" class="icon-btn" title="Redo" disabled>↷</button>
+        <button id="downloadBtn" class="primary-btn" disabled>Download PDF</button>
+      </div>
+    </header>
+
+    <main id="landing" class="landing">
+      <section class="hero">
+        <div class="eyebrow">PRIVATE BY DESIGN</div>
+        <h1>Edit PDFs without<br><span>the complexity.</span></h1>
+        <p>Drop in a document, edit its text, add content and download it. No account, no watermark and no upload to our servers.</p>
+        <label id="dropzone" class="dropzone" for="fileInput">
+          <input id="fileInput" type="file" accept="application/pdf" hidden>
+          <span class="upload-icon">↥</span>
+          <strong>Drop your PDF here</strong>
+          <span>or click to choose a file</span>
+          <small>PDF up to 50 MB · stays on your device</small>
+        </label>
+        <div class="trust-row">
+          <span>✓ No sign-up</span><span>✓ No watermark</span><span>✓ Local processing</span>
+        </div>
+        <button id="restoreSessionBtn" class="restore-session hidden" type="button">
+          <span class="restore-icon">↺</span>
+          <span><strong>Continue your last document</strong><small>Recover the locally autosaved editing session</small></span>
+        </button>
+      </section>
+      <section class="feature-strip">
+        <article><b>01</b><h3>Edit existing text</h3><p>Click detected text, replace it and control its full appearance.</p></article>
+        <article><b>02</b><h3>Edit visually</h3><p>Add text, signatures, images, highlights and shapes directly on the page.</p></article>
+        <article><b>03</b><h3>Export instantly</h3><p>Download the finished PDF with no watermark or account.</p></article>
+      </section>
+    </main>
+
+    <main id="workspace" class="workspace hidden">
+      <aside class="sidebar">
+        <div class="panel-title"><span>Pages</span><button id="closeDocBtn" class="text-btn">New file</button></div>
+        <div id="thumbs" class="thumbs"></div>
+      </aside>
+
+      <section class="editor-area">
+        <div class="workspace-tabs" role="tablist" aria-label="Document workspace">
+          <button id="editViewTab" class="workspace-tab active" type="button" role="tab" aria-selected="true">
+            <span class="workspace-tab-icon">✦</span>
+            <span><strong>Edit document</strong><small>Text, signatures and annotations</small></span>
+          </button>
+          <button id="pagesViewTab" class="workspace-tab" type="button" role="tab" aria-selected="false">
+            <span class="workspace-tab-icon">▦</span>
+            <span><strong>Organise pages</strong><small><b id="pageCountLabel">0</b> pages · reorder, rotate and delete</small></span>
+          </button>
+          <div class="workspace-tip" id="workspaceTip">Wheel to scroll · drag the dark canvas to move · Space + drag anywhere</div>
+        </div>
+
+        <div class="toolbar" id="toolbar">
+          <button data-tool="select" class="tool active"><span>↖</span>Select</button>
+          <button data-tool="editpdf" class="tool edit-tool"><span>⌁</span>Edit PDF</button>
+          <span class="tool-divider" aria-hidden="true"></span>
+          <button data-tool="text" class="tool"><span>T</span>Text</button>
+          <button data-tool="whiteout" class="tool"><span>▭</span>Whiteout</button>
+          <button data-tool="image" class="tool"><span>▧</span>Image</button>
+          <button data-tool="signature" class="tool"><span>✎</span>Sign</button>
+          <button data-tool="draw" class="tool"><span>〰</span>Draw</button>
+          <button data-tool="highlight" class="tool"><span>▰</span>Highlight</button>
+          <button data-tool="shape" class="tool"><span>□</span>Shape</button>
+          <button data-tool="date" class="tool"><span>◷</span>Date</button>
+          <button data-tool="checkbox" class="tool"><span>☑</span>Check</button>
+          <input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp" hidden>
+        </div>
+
+        <div class="canvas-shell">
+          <div id="editHint" class="edit-hint hidden">
+            <span class="edit-hint-icon">⌁</span>
+            <div><strong>Edit existing text</strong><small>Hover a text line and click it</small></div>
+            <button id="exitEditMode" title="Exit edit mode">×</button>
+          </div>
+          <div class="zoom-row" aria-label="Document navigation">
+            <button id="panBtn" class="mini-btn pan-btn" title="Pan document — drag with the mouse (H)">✋</button>
+            <button id="centerViewBtn" class="mini-btn" title="Centre document">◎</button>
+            <button id="fitViewBtn" class="mini-btn fit-btn" title="Fit page to window">Fit</button>
+            <button id="gridBtn" class="mini-btn" title="Toggle grid snapping">#</button>
+            <span class="zoom-divider" aria-hidden="true"></span>
+            <button id="zoomOut" class="mini-btn" title="Zoom out">−</button>
+            <span id="zoomLabel">100%</span>
+            <button id="zoomIn" class="mini-btn" title="Zoom in">+</button>
+          </div>
+          <div id="pageStage" class="page-stage" tabindex="0" aria-label="PDF canvas. Use scrollbars, mouse wheel, Space plus drag, middle-mouse drag, or the hand tool to move around.">
+            <div id="pageStageContent" class="page-stage-content">
+              <div id="pageWrap" class="page-wrap">
+                <canvas id="pdfCanvas"></canvas>
+                <div id="overlay" class="overlay"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <section id="pagesManager" class="pages-manager hidden" aria-label="Organise all PDF pages">
+          <div class="pages-manager-head">
+            <div>
+              <span class="eyebrow">DOCUMENT STRUCTURE</span>
+              <h2>Organise all pages</h2>
+              <p>Drag pages into a new order or select several pages to apply an action in one step.</p>
+            </div>
+            <div class="pages-manager-actions">
+              <button id="selectAllPagesBtn" class="manager-btn" type="button">Select all</button>
+              <button id="clearPageSelectionBtn" class="manager-btn" type="button">Clear</button>
+              <span class="manager-divider" aria-hidden="true"></span>
+              <button id="rotateSelectedPagesBtn" class="manager-btn" type="button" disabled>↻ Rotate</button>
+              <button id="duplicateSelectedPagesBtn" class="manager-btn" type="button" disabled>⧉ Duplicate</button>
+              <button id="deleteSelectedPagesBtn" class="manager-btn danger" type="button" disabled>Delete</button>
+            </div>
+          </div>
+          <div class="page-selection-summary">
+            <span id="pageSelectionText">No pages selected</span>
+            <span>Tip: double-click a page to open it in the editor.</span>
+          </div>
+          <div id="pagesGrid" class="pages-grid"></div>
+        </section>
+      </section>
+
+      <aside class="properties">
+        <div class="panel-title">Properties</div>
+        <div id="emptyProps" class="empty-props">
+          <div class="empty-icon">◇</div>
+          <h3>Select an element</h3>
+          <p>Click an item on the page to edit its settings.</p>
+        </div>
+
+        <div id="objectProps" class="object-props hidden">
+          <div class="property-section compact-section">
+            <label>Type<input id="propType" disabled></label>
+          </div>
+
+          <div id="textProps" class="property-section hidden">
+            <div class="section-heading"><span>Text</span><small id="existingTextBadge" class="existing-badge hidden">Existing PDF text</small></div>
+            <label class="field-label">Content<textarea id="propText" rows="4" spellcheck="true"></textarea></label>
+
+            <label class="field-label">Font
+              <select id="propFont">
+                <option value="Helvetica">Helvetica</option>
+                <option value="Arial">Arial</option>
+                <option value="Verdana">Verdana</option>
+                <option value="Trebuchet MS">Trebuchet</option>
+                <option value="Times New Roman">Times New Roman</option>
+                <option value="Georgia">Georgia</option>
+                <option value="Courier New">Courier New</option>
+              </select>
+            </label>
+
+            <div class="two-col">
+              <label class="field-label">Size<input id="propSize" type="number" min="6" max="160" step="1"></label>
+              <label class="field-label">Align
+                <select id="propAlign">
+                  <option value="left">Left</option>
+                  <option value="center">Centre</option>
+                  <option value="right">Right</option>
+                </select>
+              </label>
+            </div>
+
+            <div class="format-toolbar" aria-label="Text formatting">
+              <div class="style-row" aria-label="Text style">
+                <button id="boldBtn" class="style-btn" title="Bold"><b>B</b></button>
+                <button id="italicBtn" class="style-btn" title="Italic"><i>I</i></button>
+                <button id="underlineBtn" class="style-btn" title="Underline"><u>U</u></button>
+              </div>
+              <div class="style-row alignment-row" aria-label="Text alignment">
+                <button id="alignLeftBtn" class="style-btn" title="Align left">≡</button>
+                <button id="alignCenterBtn" class="style-btn" title="Align centre">≣</button>
+                <button id="alignRightBtn" class="style-btn" title="Align right">≡</button>
+              </div>
+            </div>
+
+            <div class="two-col">
+              <label class="field-label">Line height<input id="propLineHeight" type="number" min="0.8" max="3" step="0.1"></label>
+              <label class="field-label">Letter spacing<input id="propLetterSpacing" type="number" min="-2" max="12" step="0.25"></label>
+            </div>
+
+            <label class="field-label">List style
+              <select id="propListStyle">
+                <option value="none">None</option>
+                <option value="bullet">Bulleted list</option>
+                <option value="number">Numbered list</option>
+              </select>
+            </label>
+            <div class="list-indent-row" aria-label="List indentation">
+              <button id="outdentBtn" class="manager-btn" type="button" title="Decrease indent">← Outdent</button>
+              <button id="indentBtn" class="manager-btn" type="button" title="Increase indent">Indent →</button>
+            </div>
+
+            <div class="colour-grid">
+              <label class="colour-field"><span>Text colour</span><input id="propColor" type="color"></label>
+              <label class="colour-field"><span>Background</span><input id="propBgColor" type="color"></label>
+            </div>
+
+            <label class="toggle-row">
+              <span><strong>Text background</strong><small>Cover content underneath</small></span>
+              <input id="propBgEnabled" type="checkbox"><i></i>
+            </label>
+            <label class="field-label bg-opacity-field">Background opacity<input id="propBgOpacity" type="range" min="0" max="1" step="0.05"><span id="bgOpacityValue" class="range-value">100%</span></label>
+
+            <div id="existingTextNote" class="property-note hidden">
+              Docora covers the original text area and places the edited text above it. This works best on plain backgrounds.
+            </div>
+          </div>
+
+          <div id="genericProps" class="property-section">
+            <label class="field-label">Colour<input id="genericColor" type="color"></label>
+          </div>
+
+          <div class="property-section">
+            <label class="field-label">Opacity<input id="propOpacity" type="range" min="0.1" max="1" step="0.05"><span id="opacityValue" class="range-value">100%</span></label>
+          </div>
+
+          <div id="layerProps" class="property-section">
+            <div class="section-heading"><span>Arrange</span></div>
+            <div class="arrange-grid">
+              <button id="bringFrontBtn" class="manager-btn" type="button">Bring front</button>
+              <button id="sendBackBtn" class="manager-btn" type="button">Send back</button>
+              <button id="lockObjBtn" class="manager-btn" type="button">Lock</button>
+              <button id="copyStyleBtn" class="manager-btn" type="button">Copy style</button>
+            </div>
+          </div>
+
+          <div class="property-section actions-section">
+            <button id="duplicateBtn" class="secondary-btn">Duplicate</button>
+            <button id="deleteObjBtn" class="danger-btn">Delete element</button>
+          </div>
+        </div>
+
+        <div id="multiProps" class="multi-props hidden">
+          <div class="property-section">
+            <div class="section-heading"><span>Multiple selection</span><small id="multiCount">0 elements</small></div>
+            <div class="align-grid">
+              <button id="alignObjectsLeft" class="manager-btn" type="button">Left</button>
+              <button id="alignObjectsCenter" class="manager-btn" type="button">Centre</button>
+              <button id="alignObjectsRight" class="manager-btn" type="button">Right</button>
+              <button id="alignObjectsTop" class="manager-btn" type="button">Top</button>
+              <button id="alignObjectsMiddle" class="manager-btn" type="button">Middle</button>
+              <button id="alignObjectsBottom" class="manager-btn" type="button">Bottom</button>
+              <button id="distributeHorizontal" class="manager-btn" type="button">Distribute ↔</button>
+              <button id="distributeVertical" class="manager-btn" type="button">Distribute ↕</button>
+            </div>
+            <div class="arrange-grid selection-actions">
+              <button id="groupSelectionBtn" class="manager-btn" type="button">Group</button>
+              <button id="ungroupSelectionBtn" class="manager-btn" type="button">Ungroup</button>
+              <button id="duplicateSelectionBtn" class="manager-btn" type="button">Duplicate</button>
+              <button id="deleteSelectionBtn" class="manager-btn danger" type="button">Delete</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="page-actions">
+          <div class="panel-title">Page</div>
+          <button id="rotateBtn" class="secondary-btn">↻ Rotate page</button>
+          <button id="deletePageBtn" class="danger-btn">Delete page</button>
+        </div>
+      </aside>
+    </main>
+    <footer id="appFooter" class="app-footer"><span>© Goodform. All rights reserved.</span><a href="https://goodform.org.uk/" target="_blank" rel="noopener">goodform.org.uk</a></footer>
+  </div>
+
+  <div id="contextMenu" class="context-menu hidden" role="menu" aria-label="Editor actions">
+    <button data-action="cut" role="menuitem"><span>Cut</span><kbd>Ctrl+X</kbd></button>
+    <button data-action="copy" role="menuitem"><span>Copy</span><kbd>Ctrl+C</kbd></button>
+    <button data-action="paste" role="menuitem"><span>Paste</span><kbd>Ctrl+V</kbd></button>
+    <button data-action="duplicate" role="menuitem"><span>Duplicate</span><kbd>Ctrl+D</kbd></button>
+    <div class="context-separator"></div>
+    <button data-action="selectAll" role="menuitem"><span>Select all on page</span><kbd>Ctrl+A</kbd></button>
+    <button data-action="bringFront" role="menuitem"><span>Bring to front</span></button>
+    <button data-action="sendBack" role="menuitem"><span>Send to back</span></button>
+    <button data-action="lock" role="menuitem"><span>Lock / unlock</span></button>
+    <button data-action="applyStyle" role="menuitem"><span>Apply copied style</span></button>
+    <div class="context-separator"></div>
+    <button data-action="group" role="menuitem"><span>Group selection</span><kbd>Ctrl+G</kbd></button>
+    <button data-action="ungroup" role="menuitem"><span>Ungroup</span><kbd>⇧Ctrl+G</kbd></button>
+    <button data-action="fit" role="menuitem"><span>Fit page to window</span></button>
+    <button data-action="centre" role="menuitem"><span>Centre view</span></button>
+    <div class="context-separator"></div>
+    <button data-action="delete" class="danger" role="menuitem"><span>Delete</span><kbd>Del</kbd></button>
+  </div>
+
+  <div id="signatureModal" class="modal hidden" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <div class="modal-head"><div><span class="eyebrow">ADD SIGNATURE</span><h2>Draw your signature</h2></div><button id="closeSignature" class="icon-btn">×</button></div>
+      <canvas id="signatureCanvas" width="720" height="260"></canvas>
+      <div class="modal-actions"><button id="clearSignature" class="secondary-btn">Clear</button><button id="useSignature" class="primary-btn">Use signature</button></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden"></div>
+  <div id="busyOverlay" class="busy-overlay hidden" role="status" aria-live="polite" aria-busy="true">
+    <div class="busy-card"><span class="busy-spinner" aria-hidden="true"></span><strong id="busyTitle">Preparing document</strong><small id="busyDetail">Please wait…</small></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js" crossorigin="anonymous"></script>
+  <script defer src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js" crossorigin="anonymous"></script>
+  <script type="module" src="app.js?v=1.0.0"></script>
+</body>
+</html>

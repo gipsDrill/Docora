@@ -1,234 +1,102 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="description" content="Docora — fast, private PDF editing in your browser." />
-  <title>Docora — Private PDF editor</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=0.6-free-canvas-pages" />
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Docora — Fast, private PDF editing in your browser</title>
+  <meta name="description" content="Edit PDF text, pages, signatures, images and annotations in a fast, private browser-based workspace. No account and no watermark.">
+  <meta name="robots" content="index,follow,max-image-preview:large">
+  <meta name="theme-color" content="#090d15">
+  <link rel="canonical" href="https://docora.goodform.org.uk/">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Docora — Fast, private PDF editing">
+  <meta property="og:description" content="Edit PDFs without the complexity. No account, no watermark, local document processing.">
+  <meta property="og:url" content="https://docora.goodform.org.uk/">
+  <meta property="og:image" content="https://docora.goodform.org.uk/assets/og-image.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Docora — Fast, private PDF editing">
+  <meta name="twitter:description" content="A simple, modern PDF editor that works in your browser.">
+  <meta name="twitter:image" content="https://docora.goodform.org.uk/assets/og-image.png">
+  <link rel="stylesheet" href="assets/site.css?v=1.0.0">
+  <script type="application/ld+json">{
+    "@context":"https://schema.org",
+    "@type":"SoftwareApplication",
+    "name":"Docora",
+    "applicationCategory":"BusinessApplication",
+    "operatingSystem":"Any modern web browser",
+    "url":"https://docora.goodform.org.uk/",
+    "description":"A fast, private browser-based PDF editor for editing text, pages, signatures, images and annotations.",
+    "offers":{"@type":"Offer","price":"0","priceCurrency":"GBP"},
+    "creator":{"@type":"Organization","name":"Goodform","url":"https://goodform.org.uk/"}
+  }</script>
 </head>
 <body>
-  <div id="app" class="app">
-    <header class="topbar">
-      <a class="brand" href="#" aria-label="Docora home">
-        <span class="brand-mark">D</span>
-        <span>Docora</span>
-        <span class="beta">BETA</span>
-      </a>
-      <div class="top-actions">
-        <span class="privacy-pill"><span class="status-dot"></span>Processed locally</span>
-        <button id="undoBtn" class="icon-btn" title="Undo" disabled>↶</button>
-        <button id="redoBtn" class="icon-btn" title="Redo" disabled>↷</button>
-        <button id="downloadBtn" class="primary-btn" disabled>Download PDF</button>
-      </div>
-    </header>
+  <header class="site-header">
+    <a class="site-brand" href="/" aria-label="Docora home"><span class="brand-mark">D</span><span>Docora</span><small>BETA</small></a>
+    <nav aria-label="Main navigation"><a href="#features">Features</a><a href="#privacy">Privacy</a><a href="#faq">FAQ</a><a href="help.html">Help</a></nav>
+    <a class="header-cta" href="editor/">Open editor</a>
+  </header>
 
-    <main id="landing" class="landing">
-      <section class="hero">
-        <div class="eyebrow">PRIVATE BY DESIGN</div>
-        <h1>Edit PDFs without<br><span>the complexity.</span></h1>
-        <p>Drop in a document, edit its text, add content and download it. No account, no watermark and no upload to our servers.</p>
-        <label id="dropzone" class="dropzone" for="fileInput">
-          <input id="fileInput" type="file" accept="application/pdf" hidden>
-          <span class="upload-icon">↥</span>
-          <strong>Drop your PDF here</strong>
-          <span>or click to choose a file</span>
-          <small>PDF up to 50 MB · stays on your device</small>
+  <main>
+    <section class="hero">
+      <div class="hero-glow"></div>
+      <div class="hero-copy">
+        <div class="eyebrow"><span></span>PRIVATE PDF WORKSPACE</div>
+        <h1>Edit PDFs without<br><em>the complexity.</em></h1>
+        <p>Add or replace text, sign documents, rearrange pages and export a polished PDF from one focused workspace.</p>
+        <label id="homeDropzone" class="home-dropzone" for="homeFileInput">
+          <input id="homeFileInput" type="file" accept="application/pdf" hidden>
+          <span class="drop-icon">↥</span>
+          <span class="drop-copy"><strong>Drop your PDF here</strong><small>or click to choose a file · up to 50 MB</small></span>
+          <span class="drop-button">Start editing</span>
         </label>
-        <div class="trust-row">
-          <span>✓ No sign-up</span><span>✓ No watermark</span><span>✓ Local processing</span>
+        <div class="trust"><span>✓ No sign-up</span><span>✓ No watermark</span><span>✓ Files stay on your device</span></div>
+      </div>
+
+      <div class="product-preview" aria-label="Preview of the Docora editor">
+        <div class="preview-top"><span class="mini-brand">D</span><b>Docora</b><span class="preview-status">● Processed locally</span><span class="preview-download">Download PDF</span></div>
+        <div class="preview-body">
+          <aside><b>Pages</b><div class="page-thumb active"></div><div class="page-thumb"></div><div class="page-thumb"></div></aside>
+          <section><div class="preview-tools"><span>↖</span><span>T</span><span>▧</span><span>✎</span><span>〰</span><span>□</span></div><div class="preview-canvas"><div class="paper"><small>DOCORA DOCUMENT</small><h3>Simple editing,<br>professional results.</h3><p>Click, type and move elements directly on your PDF.</p><div class="selected-box">Your edited text<span></span></div><div class="signature">Adam</div></div></div></section>
+          <aside class="preview-props"><b>Properties</b><label>Font<div>Helvetica⌄</div></label><label>Size<div>18</div></label><label>Colour<div class="colour-dot"></div></label></aside>
         </div>
-      </section>
-      <section class="feature-strip">
-        <article><b>01</b><h3>Edit existing text</h3><p>Click detected text, replace it and control its full appearance.</p></article>
-        <article><b>02</b><h3>Edit visually</h3><p>Add text, signatures, images, highlights and shapes directly on the page.</p></article>
-        <article><b>03</b><h3>Export instantly</h3><p>Download the finished PDF with no watermark or account.</p></article>
-      </section>
-    </main>
+      </div>
+    </section>
 
-    <main id="workspace" class="workspace hidden">
-      <aside class="sidebar">
-        <div class="panel-title"><span>Pages</span><button id="closeDocBtn" class="text-btn">New file</button></div>
-        <div id="thumbs" class="thumbs"></div>
-      </aside>
+    <section class="proof-bar"><span>TEXT &amp; FORMATTING</span><span>SIGNATURES</span><span>PAGE MANAGEMENT</span><span>ANNOTATIONS</span><span>LOCAL AUTOSAVE</span></section>
 
-      <section class="editor-area">
-        <div class="workspace-tabs" role="tablist" aria-label="Document workspace">
-          <button id="editViewTab" class="workspace-tab active" type="button" role="tab" aria-selected="true">
-            <span class="workspace-tab-icon">✦</span>
-            <span><strong>Edit document</strong><small>Text, signatures and annotations</small></span>
-          </button>
-          <button id="pagesViewTab" class="workspace-tab" type="button" role="tab" aria-selected="false">
-            <span class="workspace-tab-icon">▦</span>
-            <span><strong>Organise pages</strong><small><b id="pageCountLabel">0</b> pages · reorder, rotate and delete</small></span>
-          </button>
-          <div class="workspace-tip" id="workspaceTip">Wheel to scroll · drag the dark canvas to move · Space + drag anywhere</div>
-        </div>
+    <section id="features" class="section features">
+      <div class="section-heading"><div class="eyebrow"><span></span>ONE FOCUSED TOOL</div><h2>Everything needed for everyday PDF work.</h2><p>Docora keeps the tools people use most within reach, without turning the screen into a maze of controls.</p></div>
+      <div class="feature-grid">
+        <article class="feature-large"><span class="feature-number">01</span><div><h3>Edit text visually</h3><p>Add text or replace detected PDF text, then control font, size, emphasis, alignment, lists, colours and background.</p></div><div class="format-demo"><div class="demo-toolbar"><b>B</b><i>I</i><u>U</u><span>≡</span><span>≣</span><span>≡</span></div><div class="demo-text">Make documents feel finished.</div></div></article>
+        <article><span class="feature-icon">✎</span><h3>Sign and annotate</h3><p>Draw a signature, add images, highlights, shapes, checkmarks and freehand notes.</p></article>
+        <article><span class="feature-icon">▦</span><h3>Organise every page</h3><p>See the full document at once, reorder with drag and drop, rotate, duplicate or remove pages.</p></article>
+        <article><span class="feature-icon">⌘</span><h3>Work like a desktop app</h3><p>Use context menus, keyboard shortcuts, multiple selection, grouping, guides and object alignment.</p></article>
+        <article><span class="feature-icon">↺</span><h3>Recover your work</h3><p>Local autosave restores the last session, while editable project files let you continue later.</p></article>
+      </div>
+    </section>
 
-        <div class="toolbar" id="toolbar">
-          <button data-tool="select" class="tool active"><span>↖</span>Select</button>
-          <button data-tool="editpdf" class="tool edit-tool"><span>⌁</span>Edit PDF</button>
-          <span class="tool-divider" aria-hidden="true"></span>
-          <button data-tool="text" class="tool"><span>T</span>Text</button>
-          <button data-tool="whiteout" class="tool"><span>▭</span>Whiteout</button>
-          <button data-tool="image" class="tool"><span>▧</span>Image</button>
-          <button data-tool="signature" class="tool"><span>✎</span>Sign</button>
-          <button data-tool="draw" class="tool"><span>〰</span>Draw</button>
-          <button data-tool="highlight" class="tool"><span>▰</span>Highlight</button>
-          <button data-tool="shape" class="tool"><span>□</span>Shape</button>
-          <button data-tool="date" class="tool"><span>◷</span>Date</button>
-          <button data-tool="checkbox" class="tool"><span>☑</span>Check</button>
-          <input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp" hidden>
-        </div>
+    <section id="privacy" class="section privacy-section">
+      <div class="privacy-card"><div class="privacy-visual"><span class="shield">◇</span><div class="pulse p1"></div><div class="pulse p2"></div><div class="pulse p3"></div></div><div><div class="eyebrow"><span></span>PRIVATE BY DESIGN</div><h2>Your PDF is processed in your browser.</h2><p>The document itself is not uploaded to a Docora server. Editing, previews, autosave and export happen on the device you are using.</p><div class="privacy-points"><span><b>Local document handling</b><small>Your file stays in the browser workspace.</small></span><span><b>No account required</b><small>Open the editor and start working immediately.</small></span><span><b>No forced watermark</b><small>Download a clean finished document.</small></span></div><a href="privacy.html">Read the privacy details →</a></div></div>
+    </section>
 
-        <div class="canvas-shell">
-          <div id="editHint" class="edit-hint hidden">
-            <span class="edit-hint-icon">⌁</span>
-            <div><strong>Edit existing text</strong><small>Hover a text line and click it</small></div>
-            <button id="exitEditMode" title="Exit edit mode">×</button>
-          </div>
-          <div class="zoom-row" aria-label="Document navigation">
-            <button id="panBtn" class="mini-btn pan-btn" title="Pan document — drag with the mouse (H)">✋</button>
-            <button id="centerViewBtn" class="mini-btn" title="Centre document">◎</button>
-            <button id="fitViewBtn" class="mini-btn fit-btn" title="Fit page to window">Fit</button>
-            <span class="zoom-divider" aria-hidden="true"></span>
-            <button id="zoomOut" class="mini-btn" title="Zoom out">−</button>
-            <span id="zoomLabel">100%</span>
-            <button id="zoomIn" class="mini-btn" title="Zoom in">+</button>
-          </div>
-          <div id="pageStage" class="page-stage" tabindex="0" aria-label="PDF canvas. Use scrollbars, mouse wheel, Space plus drag, middle-mouse drag, or the hand tool to move around.">
-            <div id="pageStageContent" class="page-stage-content">
-              <div id="pageWrap" class="page-wrap">
-                <canvas id="pdfCanvas"></canvas>
-                <div id="overlay" class="overlay"></div>
-              </div>
-            </div>
-          </div>
-        </div>
+    <section class="section how"><div class="section-heading"><div class="eyebrow"><span></span>THREE SIMPLE STEPS</div><h2>From PDF to finished document.</h2></div><div class="steps"><article><b>1</b><h3>Open your PDF</h3><p>Drop a file or choose one from your device.</p></article><article><b>2</b><h3>Edit directly</h3><p>Select tools, click the page and position changes visually.</p></article><article><b>3</b><h3>Download</h3><p>Export the edited document as a clean PDF.</p></article></div></section>
 
-        <section id="pagesManager" class="pages-manager hidden" aria-label="Organise all PDF pages">
-          <div class="pages-manager-head">
-            <div>
-              <span class="eyebrow">DOCUMENT STRUCTURE</span>
-              <h2>Organise all pages</h2>
-              <p>Drag pages into a new order or select several pages to apply an action in one step.</p>
-            </div>
-            <div class="pages-manager-actions">
-              <button id="selectAllPagesBtn" class="manager-btn" type="button">Select all</button>
-              <button id="clearPageSelectionBtn" class="manager-btn" type="button">Clear</button>
-              <span class="manager-divider" aria-hidden="true"></span>
-              <button id="rotateSelectedPagesBtn" class="manager-btn" type="button" disabled>↻ Rotate</button>
-              <button id="duplicateSelectedPagesBtn" class="manager-btn" type="button" disabled>⧉ Duplicate</button>
-              <button id="deleteSelectedPagesBtn" class="manager-btn danger" type="button" disabled>Delete</button>
-            </div>
-          </div>
-          <div class="page-selection-summary">
-            <span id="pageSelectionText">No pages selected</span>
-            <span>Tip: double-click a page to open it in the editor.</span>
-          </div>
-          <div id="pagesGrid" class="pages-grid"></div>
-        </section>
-      </section>
+    <section id="faq" class="section faq"><div class="section-heading"><div class="eyebrow"><span></span>QUESTIONS</div><h2>Useful things to know.</h2></div><div class="faq-list">
+      <details open><summary>Can Docora edit text that is already inside a PDF?<span>+</span></summary><p>Docora can detect many text items and replace them visually. Scans, outlined lettering, unusual embedded fonts and complex layouts may require whiteout-and-replace or a future OCR workflow.</p></details>
+      <details><summary>Does Docora upload my PDF?<span>+</span></summary><p>The document is handled locally in the browser. Third-party libraries are currently delivered through established content delivery networks, but the PDF file itself is not sent to them by Docora.</p></details>
+      <details><summary>Can I continue editing later?<span>+</span></summary><p>Yes. Docora autosaves the current session locally and can export an editable .docora project containing the PDF and editing data.</p></details>
+      <details><summary>Does it work on phones and tablets?<span>+</span></summary><p>The interface adapts to smaller screens with slide-out page and properties panels, a bottom tool strip and touch zoom support. Desktop remains the best option for precise document work.</p></details>
+    </div></section>
 
-      <aside class="properties">
-        <div class="panel-title">Properties</div>
-        <div id="emptyProps" class="empty-props">
-          <div class="empty-icon">◇</div>
-          <h3>Select an element</h3>
-          <p>Click an item on the page to edit its settings.</p>
-        </div>
+    <section class="final-cta"><div><div class="eyebrow"><span></span>READY WHEN YOU ARE</div><h2>Make the change. Keep the PDF.</h2><p>No account, no complicated setup and no watermark.</p></div><a href="editor/">Open Docora editor <span>→</span></a></section>
+  </main>
 
-        <div id="objectProps" class="object-props hidden">
-          <div class="property-section compact-section">
-            <label>Type<input id="propType" disabled></label>
-          </div>
-
-          <div id="textProps" class="property-section hidden">
-            <div class="section-heading"><span>Text</span><small id="existingTextBadge" class="existing-badge hidden">Existing PDF text</small></div>
-            <label class="field-label">Content<textarea id="propText" rows="4" spellcheck="true"></textarea></label>
-
-            <label class="field-label">Font
-              <select id="propFont">
-                <option value="Helvetica">Helvetica</option>
-                <option value="Arial">Arial</option>
-                <option value="Verdana">Verdana</option>
-                <option value="Trebuchet MS">Trebuchet</option>
-                <option value="Times New Roman">Times New Roman</option>
-                <option value="Georgia">Georgia</option>
-                <option value="Courier New">Courier New</option>
-              </select>
-            </label>
-
-            <div class="two-col">
-              <label class="field-label">Size<input id="propSize" type="number" min="6" max="160" step="1"></label>
-              <label class="field-label">Align
-                <select id="propAlign">
-                  <option value="left">Left</option>
-                  <option value="center">Centre</option>
-                  <option value="right">Right</option>
-                </select>
-              </label>
-            </div>
-
-            <div class="style-row" aria-label="Text style">
-              <button id="boldBtn" class="style-btn" title="Bold"><b>B</b></button>
-              <button id="italicBtn" class="style-btn" title="Italic"><i>I</i></button>
-              <button id="underlineBtn" class="style-btn" title="Underline"><u>U</u></button>
-            </div>
-
-            <div class="colour-grid">
-              <label class="colour-field"><span>Text colour</span><input id="propColor" type="color"></label>
-              <label class="colour-field"><span>Background</span><input id="propBgColor" type="color"></label>
-            </div>
-
-            <label class="toggle-row">
-              <span><strong>Text background</strong><small>Cover content underneath</small></span>
-              <input id="propBgEnabled" type="checkbox"><i></i>
-            </label>
-
-            <div id="existingTextNote" class="property-note hidden">
-              Docora covers the original text area and places the edited text above it. This works best on plain backgrounds.
-            </div>
-          </div>
-
-          <div id="genericProps" class="property-section">
-            <label class="field-label">Colour<input id="genericColor" type="color"></label>
-          </div>
-
-          <div class="property-section">
-            <label class="field-label">Opacity<input id="propOpacity" type="range" min="0.1" max="1" step="0.05"><span id="opacityValue" class="range-value">100%</span></label>
-          </div>
-
-          <div class="property-section actions-section">
-            <button id="duplicateBtn" class="secondary-btn">Duplicate</button>
-            <button id="deleteObjBtn" class="danger-btn">Delete element</button>
-          </div>
-        </div>
-
-        <div class="page-actions">
-          <div class="panel-title">Page</div>
-          <button id="rotateBtn" class="secondary-btn">↻ Rotate page</button>
-          <button id="deletePageBtn" class="danger-btn">Delete page</button>
-        </div>
-      </aside>
-    </main>
-  </div>
-
-  <div id="signatureModal" class="modal hidden" role="dialog" aria-modal="true">
-    <div class="modal-card">
-      <div class="modal-head"><div><span class="eyebrow">ADD SIGNATURE</span><h2>Draw your signature</h2></div><button id="closeSignature" class="icon-btn">×</button></div>
-      <canvas id="signatureCanvas" width="720" height="260"></canvas>
-      <div class="modal-actions"><button id="clearSignature" class="secondary-btn">Clear</button><button id="useSignature" class="primary-btn">Use signature</button></div>
-    </div>
-  </div>
-
-  <div id="toast" class="toast hidden"></div>
-
-  <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-  <script defer src="https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"></script>
-  <script type="module" src="app.js?v=0.6-free-canvas-pages"></script>
+  <footer class="site-footer"><div><a class="site-brand" href="/"><span class="brand-mark">D</span><span>Docora</span></a><p>Fast, private PDF editing in your browser.</p></div><div class="footer-links"><a href="editor/">Editor</a><a href="help.html">Help</a><a href="privacy.html">Privacy</a><a href="terms.html">Terms</a></div><div class="goodform">© Goodform. All rights reserved.<a href="https://goodform.org.uk/" target="_blank" rel="noopener">goodform.org.uk</a></div></footer>
+  <div id="homeToast" class="home-toast" hidden></div>
+  <script src="assets/site.js?v=1.0.0" defer></script>
 </body>
 </html>
