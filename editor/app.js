@@ -184,6 +184,7 @@ async function loadPDF(file) {
         rotation: 0,
         annotations: [],
         detectedText: null,
+        detectedTextSource: null,
       });
     }
 
@@ -315,7 +316,11 @@ async function renderPage() {
     background: 'rgb(255,255,255)',
   }).promise;
 
-  pageState.detectedText = await detectTextItems(page, cssViewport, cssScale, pageState.source);
+  const extractedText = await detectTextItems(page, cssViewport, cssScale, pageState.source);
+  if (extractedText.length || pageState.detectedTextSource !== 'ocr') {
+    pageState.detectedText = extractedText;
+    pageState.detectedTextSource = extractedText.length ? 'pdf' : null;
+  }
   renderAnnotations();
   showProps(currentAnn() || null);
   els.zoomLabel.textContent = `${Math.round(state.scale * 100)}%`;
@@ -326,9 +331,29 @@ async function renderPage() {
   }
 }
 
+async function getTextContentCompat(page) {
+  const attempts = [
+    () => page.getTextContent({ includeMarkedContent: false, disableNormalization: false }),
+    () => page.getTextContent({ disableNormalization: false }),
+    () => page.getTextContent(),
+  ];
+  let lastError = null;
+  for (const attempt of attempts) {
+    try {
+      const content = await attempt();
+      if (content?.items?.some((item) => typeof item?.str === 'string' && item.str.trim())) return content;
+      if (content?.items) return content;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  if (lastError) throw lastError;
+  return { items: [], styles: {} };
+}
+
 async function detectTextItems(page, viewport, cssScale, sourcePage) {
   try {
-    const textContent = await page.getTextContent({ includeMarkedContent: false });
+    const textContent = await getTextContentCompat(page);
     return textContent.items
       .map((item, index) => {
         const text = item.str?.trim();
@@ -448,6 +473,80 @@ function cssFontFamily(font) {
   if (safe === 'Georgia') return `Georgia, 'Times New Roman', serif`;
   if (safe === 'Courier New') return `'Courier New', Courier, monospace`;
   return `Arial, Helvetica, sans-serif`;
+}
+
+let tesseractModulePromise = null;
+
+async function loadTesseractModule() {
+  if (!tesseractModulePromise) {
+    tesseractModulePromise = import('https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.esm.min.js');
+  }
+  return tesseractModulePromise;
+}
+
+async function detectTextWithOCR() {
+  const pageState = state.pages[state.current];
+  if (!pageState || !els.canvas.width || !els.canvas.height) return [];
+
+  showBusy('Finding text', 'This page has no usable PDF text layer. Running local OCR…');
+  try {
+    const maxWidth = 1800;
+    const ratio = Math.min(1, maxWidth / els.canvas.width);
+    const ocrCanvas = document.createElement('canvas');
+    ocrCanvas.width = Math.max(1, Math.round(els.canvas.width * ratio));
+    ocrCanvas.height = Math.max(1, Math.round(els.canvas.height * ratio));
+    const context = ocrCanvas.getContext('2d', { alpha: false });
+    context.fillStyle = '#fff';
+    context.fillRect(0, 0, ocrCanvas.width, ocrCanvas.height);
+    context.drawImage(els.canvas, 0, 0, ocrCanvas.width, ocrCanvas.height);
+
+    const module = await loadTesseractModule();
+    const api = module.default || module;
+    const result = await api.recognize(ocrCanvas, 'eng', {
+      logger(message) {
+        if (message?.status === 'recognizing text' && Number.isFinite(message.progress)) {
+          updateBusy(`Recognising text… ${Math.round(message.progress * 100)}%`);
+        }
+      },
+    });
+
+    const words = result?.data?.words || [];
+    const items = words
+      .filter((word) => String(word?.text || '').trim() && (word.confidence ?? 100) >= 30 && word.bbox)
+      .map((word, index) => {
+        const { x0, y0, x1, y1 } = word.bbox;
+        const x = clamp(x0 / ocrCanvas.width, 0, 0.99);
+        const y = clamp(y0 / ocrCanvas.height, 0, 0.99);
+        const w = clamp((x1 - x0) / ocrCanvas.width, 0.012, 1 - x);
+        const h = clamp((y1 - y0) / ocrCanvas.height, 0.012, 1 - y);
+        const cssHeight = h * Math.max(els.pageWrap.clientHeight, 1);
+        return {
+          id: `ocr-${pageState.source}-${index}-${String(word.text).slice(0, 20)}`,
+          text: String(word.text).trim(),
+          x, y, w, h,
+          size: Math.max(6, Math.round((cssHeight / Math.max(BASE_RENDER_SCALE * state.scale, 0.01)) * 10) / 10),
+          fontFamily: 'Helvetica',
+          bold: false,
+          italic: false,
+        };
+      });
+
+    pageState.detectedText = items;
+    pageState.detectedTextSource = items.length ? 'ocr' : null;
+    renderAnnotations();
+    if (items.length) {
+      toast(`Found ${items.length} editable text item${items.length === 1 ? '' : 's'} with OCR.`);
+    } else {
+      toast('No editable text was found. This page may be an image with very low contrast.');
+    }
+    return items;
+  } catch (error) {
+    console.error('OCR failed', error);
+    toast('Text recognition could not start. Check your connection and try again.');
+    return [];
+  } finally {
+    hideBusy();
+  }
 }
 
 function renderDetectedTextTargets(pageState) {
@@ -827,13 +926,17 @@ function setTool(tool, rerender = true) {
 }
 
 $$('.tool').forEach((button) => {
-  button.onclick = () => {
+  button.onclick = async () => {
     const tool = button.dataset.tool;
     setTool(tool);
 
     if (tool === 'editpdf') {
-      const count = state.pages[state.current]?.detectedText?.length || 0;
-      toast(count ? 'Hover and click existing text to edit it.' : 'No editable text detected on this page.');
+      let count = state.pages[state.current]?.detectedText?.length || 0;
+      if (!count) {
+        toast('No PDF text layer found — trying text recognition…');
+        count = (await detectTextWithOCR()).length;
+      }
+      if (count) toast('Tap a highlighted text item to edit it.');
     }
     if (tool === 'text') addAnn(textDefaults());
     if (tool === 'whiteout') addAnn({ ...defaultPos(), type: 'whiteout', w: 0.28, h: 0.05, color: '#ffffff', opacity: 1 });
@@ -2042,7 +2145,7 @@ els.openProjectBtn.onclick = () => els.projectInput.click();
 els.projectInput.onchange = async (event) => {
   const file=event.target.files[0]; if(!file) return;
   showBusy('Opening project', 'Restoring the PDF and editing data…');
-  try { const project=JSON.parse(await file.text()); if(project.format!=='docora-project') throw new Error('Invalid project'); state.pdfBytes=base64ToBytes(project.pdf); state.fileName=project.fileName||'document.pdf'; state.pdfDoc=await pdfjsLib.getDocument({data:state.pdfBytes.slice()}).promise; const snapshot=JSON.parse(project.snapshot); state.pages=snapshot.pages.map((page)=>({...page,pageId:page.pageId||uid(),detectedText:null})); state.current=clamp(snapshot.current||0,0,state.pages.length-1); state.history=[];state.future=[];state.pageSelection=new Set();clearSelection(false);state.pendingStageCenter=true;state.dirty=false;setWorkspaceView('edit',false);els.landing.classList.add('hidden');els.workspace.classList.remove('hidden');els.download.disabled=false;await renderAll();await saveSession(true);toast('Docora project opened.'); } catch(error){console.error(error);toast('This is not a valid Docora project.');} finally {hideBusy();event.target.value='';}
+  try { const project=JSON.parse(await file.text()); if(project.format!=='docora-project') throw new Error('Invalid project'); state.pdfBytes=base64ToBytes(project.pdf); state.fileName=project.fileName||'document.pdf'; state.pdfDoc=await pdfjsLib.getDocument({data:state.pdfBytes.slice()}).promise; const snapshot=JSON.parse(project.snapshot); state.pages=snapshot.pages.map((page)=>({...page,pageId:page.pageId||uid(),detectedText:null,detectedTextSource:null})); state.current=clamp(snapshot.current||0,0,state.pages.length-1); state.history=[];state.future=[];state.pageSelection=new Set();clearSelection(false);state.pendingStageCenter=true;state.dirty=false;setWorkspaceView('edit',false);els.landing.classList.add('hidden');els.workspace.classList.remove('hidden');els.download.disabled=false;await renderAll();await saveSession(true);toast('Docora project opened.'); } catch(error){console.error(error);toast('This is not a valid Docora project.');} finally {hideBusy();event.target.value='';}
 };
 window.addEventListener('beforeunload', (event) => { if (!state.dirty) return; event.preventDefault(); event.returnValue=''; });
 async function checkPendingLaunch() {

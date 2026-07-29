@@ -94,3 +94,5 @@ Footer attribution:
 ```text
 © Goodform. All rights reserved. goodform.org.uk
 ```
+
+Docora v1.0.1 mobile editor fixes: visible hand tool on phones, touch panning, robust PDF text extraction with OCR fallback, and Billora footer link.
